@@ -55,7 +55,7 @@ await server.start();
 
 A backplane can omit `publicDir`. Both RPC and MCP may expose the same service methods. To preserve RPC guards when exposing RPC methods through MCP, use the upstream MCP-to-RPC bridge rather than directly registering the underlying functions as in this small independent example.
 
-The legacy RPC adapter does not create or isolate the process-global upstream registry. Do not create two independent legacy RPC registries in the same process. When the new instance-local RPC interface is available, pass its endpoint to `rpcPlugin(rpc)`, or pass it directly if it implements `ServePlugin` and supplies its own transport protections.
+The legacy RPC adapter does not create or isolate the process-global upstream registry. Do not create two independent legacy RPC registries in the same process. defuss-rpc 4.0.0 `createRpcServer()` returns an instance-local endpoint: pass it to `rpcPlugin(rpc)`, which the release gate exercises with the real RPC client, or pass it directly if it implements `ServePlugin` and supplies its own transport protections.
 
 `rpcPlugin` mounts the current RPC wire paths, requires `application/json` for calls, bounds decompressed call bodies to 1 MiB by default, and accepts gzip and deflate JSON calls. Uploads pass through without call-body buffering. Use `rpcPlugin(rpcRoute, { maxCallBytes: 4 * 1024 * 1024 })` to change the call limit. The host applies a 1 GiB wire ceiling by default; configure a stricter plugin limit or an explicit larger global limit for uploads. The upstream endpoint still owns decompressed upload limits and authentication. The legacy adapter deliberately does not implement dynamic response gzip; NDJSON and SSE pass through without compression or buffering.
 
@@ -72,7 +72,7 @@ const health = o11yPlugin(
 );
 ```
 
-The generic adapter does not define defuss-o11y health semantics or claim compatibility with an unverified upstream release. The optional `onLifecycle`, `onRequest` and `onDiagnostic` callbacks expose host-level observations to your logging or metrics system.
+The generic adapter does not define defuss-o11y health semantics. Its default routes are `/health`, `/healthz` and `/metrics`; defuss-o11y 0.3.0 also serves `/readyz` and `/livez`, so pass all five routes, as `tests/o11y-fixture.ts` does. The optional `onLifecycle`, `onRequest` and `onDiagnostic` callbacks expose host-level observations to your logging or metrics system.
 
 ## Static-first dispatch
 
@@ -165,7 +165,7 @@ A wildcard bind (`0.0.0.0` or `::`) requires explicit `allowedHosts`; an empty `
 
 The default wire-body ceiling is 1 GiB and the default admission limit is 1024. Plugins can narrow the body ceiling/deadline. Response streams, executing handlers, body-bearing uploads and open static descriptors have independent budgets. The stream budget is checked when a response body is available, not before protocol side effects; use handler and per-plugin limits for admission before execution. A bodyless health response can still succeed when stream capacity is exhausted. `maxConnections` is Node-only; configure edge connection limits for Bun.
 
-`executionTimeoutMs` on a plugin sends 504 on expiry and aborts cooperatively, but an uncooperative handler still holds its lease and handler budget until it settles. Transport framing validates response headers. It drops `Connection`, the fields it names, `Keep-Alive` and `Proxy-Connection`, and rejects `Transfer-Encoding`, `TE`, `Trailer` and `Upgrade` with 500; the Node pump never writes bytes beyond Content-Length and closes a connection after a committed short frame.
+`executionTimeoutMs` on a plugin sends 504 on expiry and aborts cooperatively, but an uncooperative handler still holds its lease and handler budget until it settles. Transport framing validates response headers. It drops hop-by-hop headers (`Connection` and the fields it names, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Upgrade` and `Transfer-Encoding: chunked`), so a `fetch()` proxy response passes through. A transfer coding other than chunked is rejected with 500; the Node pump never writes bytes beyond Content-Length and closes a connection after a committed short frame.
 
 `onLifecycle` measures response-source production, not confirmed network delivery. Native Bun static fast path requires request, stream and descriptor budgets disabled and no lifecycle observer. Native completion accounting cannot safely be promised with the currently implemented BunFile interface.
 
@@ -183,7 +183,7 @@ make bench
 make bench-frameworks
 ```
 
-The development gate runs lint, typecheck, Node and Bun HTTP tests, coverage, packed-consumer E2E and Chromium/WebKit media seeking. The release gate additionally requires a tracked Bun lockfile and a frozen install, actual RPC, MCP and O11y packages, plus an O11y fixture implementing the actual upstream API. See [verification](docs/VERIFICATION.md). Publishing invokes `make release-verify`, which fails closed if prerequisites are unavailable. Do not interpret an offline fallback build or source tests as a complete release attestation.
+The development gate runs lint, typecheck, Node and Bun HTTP tests, coverage, packed-consumer E2E and Chromium/WebKit media seeking. The release gate additionally requires a tracked Bun lockfile and a frozen install, and the actual RPC, MCP and O11y packages. `tests/o11y-fixture.ts` mounts the O11y package; `DEFUSS_O11Y_FIXTURE` can replace it for another defuss-o11y version. See [verification](docs/VERIFICATION.md). Publishing invokes `make release-verify`, which fails closed if prerequisites are unavailable. Do not interpret an offline fallback build or source tests as a complete release attestation.
 
 Run the separate-process benchmark against native transport and an optional previous build:
 

@@ -7,9 +7,9 @@ jobs:
   release-verify:
     runs-on: ubuntu-latest
     env:
-      DEFUSS_RPC_PACKAGE: ${{ vars.DEFUSS_RPC_PACKAGE }}
-      DEFUSS_MCP_PACKAGE: ${{ vars.DEFUSS_MCP_PACKAGE }}
-      DEFUSS_O11Y_PACKAGE: ${{ vars.DEFUSS_O11Y_PACKAGE }}
+      DEFUSS_RPC_PACKAGE: ${{ vars.DEFUSS_RPC_PACKAGE || 'defuss-rpc@4.0.0' }}
+      DEFUSS_MCP_PACKAGE: ${{ vars.DEFUSS_MCP_PACKAGE || 'defuss-mcp@0.6.0' }}
+      DEFUSS_O11Y_PACKAGE: ${{ vars.DEFUSS_O11Y_PACKAGE || 'defuss-o11y@0.3.0' }}
       DEFUSS_O11Y_FIXTURE: ${{ vars.DEFUSS_O11Y_FIXTURE }}
     steps:
       - uses: actions/checkout@v4

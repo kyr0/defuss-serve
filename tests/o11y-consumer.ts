@@ -1,4 +1,4 @@
-/** Execute a real upstream fixture once the defuss-o11y endpoint API is published. */
+/** Mount the real defuss-o11y package through a fixture (tests/o11y-fixture.ts by default) and run its checks. */
 import assert from 'node:assert/strict';
 import { createServer, type ServePlugin } from 'defuss-serve';
 const fixtureUrl = new URL('./o11y-fixture.ts', import.meta.url).href;

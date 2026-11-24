@@ -34,3 +34,6 @@
 2026-11-24T03:04:43Z s=5940460f FINDING docs/VERIFICATION.md defect list P09 learn=none: Prose fix; no mechanical check fits.
 2026-11-24T03:33:07Z s=5940460f DONE fp=df43981a406a cov=89.3% paths=ARCH.md,CHANGELOG.md,README.md,docs/BENCHMARKS.md(+6)
 2026-11-24T03:33:07Z s=5940460f FINDING docs/BENCHMARKS.md:50 B09; docs/VERIFICATION.md:44 B09 learn=none: Prose precision fix; no mechanical check fits.
+2026-11-24T04:12:00Z s=5940460f DONE fp=c1036188a392 cov=89.3% paths=.github/workflows/release-verify.yml,ARCH.md,CHANGELOG.md,README.md(+7)
+2026-11-24T04:12:00Z s=5940460f FINDING src/runtime/framing.ts:validateResponse learn=test: VERIFIED: regression.test.ts hop-by-hop test fails on the previous build at /sse and passes on Node and Bun for plugin, fetch() proxy and streamed fetch() proxy
+2026-11-24T04:12:00Z s=5940460f FINDING scripts/e2e.ts:DEFUSS_O11Y_FIXTURE learn=test: VERIFIED: make release-verify passed with defuss-rpc@4.0.0 and defuss-mcp@0.6.0 from npm and the bundled fixture on Node and Bun.

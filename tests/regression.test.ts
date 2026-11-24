@@ -34,25 +34,27 @@ function raw(s: ServeServer, payload: string): Promise<string> {
 
 test('invalid response headers and forbidden framing cancel the body and release every lease', async t=>{
   let cancelled=0; const diagnostics: string[]=[];
-  const s=await server(t,{plugins:[route('bad',()=>new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{'x-bad':'a\u0001b'}})),route('hop',()=>new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{'transfer-encoding':'chunked'}})),route('length',()=>new Response(null,{headers:{'content-length':'9'}})),route('ok',()=>new Response('ok'))],onDiagnostic:e=>diagnostics.push(e.code)});
+  const s=await server(t,{plugins:[route('bad',()=>new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{'x-bad':'a\u0001b'}})),route('hop',()=>new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{'transfer-encoding':'gzip, chunked'}})),route('length',()=>new Response(null,{headers:{'content-length':'9'}})),route('ok',()=>new Response('ok'))],onDiagnostic:e=>diagnostics.push(e.code)});
   for (const path of ['/bad','/hop','/length']) { const r=await call(s,path);assert.equal(r.status,500);await r.text();await until(()=>drained(s)); }
   assert.equal(cancelled,2);assert.equal(diagnostics.filter(x=>x==='response-framing-error').length,3);
   assert.equal(await(await call(s,'/ok')).text(),'ok');
 });
 
-test('connection management headers from plugins are dropped, body framing headers still fail', async t=>{
-  // defuss-mcp and defuss-rpc send Connection: keep-alive on SSE; a fetch() proxy returns immutable headers carrying it.
+test('hop-by-hop headers from plugins and fetch() proxies are dropped, other transfer codings still fail', async t=>{
+  // defuss-mcp and defuss-rpc send Connection: keep-alive on SSE; a fetch() proxy returns immutable headers carrying
+  // Connection, Keep-Alive and, for a streamed upstream reply, Transfer-Encoding: chunked.
   const diagnostics: string[]=[]; const sse='data: 1\n\n';
-  const upstream=createHttpServer((_,res)=>{ res.setHeader('content-type','text/event-stream'); res.setHeader('x-end','1'); res.setHeader('set-cookie',['a=1','b=2']); res.end(sse); }).listen(0,'127.0.0.1');
+  const upstream=createHttpServer((req,res)=>{ res.setHeader('content-type','text/event-stream'); res.setHeader('x-end','1'); res.setHeader('set-cookie',['a=1','b=2']); if (req.url==='/stream') { res.write(sse.slice(0,4)); res.end(sse.slice(4)); } else res.end(sse); }).listen(0,'127.0.0.1');
   await new Promise(resolve=>upstream.once('listening',resolve)); t.after(()=>new Promise(resolve=>upstream.close(resolve)));
   const s=await server(t,{plugins:[
-    route('sse',()=>{ const headers=new Headers({'content-type':'text/event-stream',connection:'keep-alive, x-hop','keep-alive':'timeout=5','x-hop':'1','x-end':'1'}); headers.append('set-cookie','a=1'); headers.append('set-cookie','b=2'); return new Response(sse,{headers}); }),
+    route('sse',()=>{ const headers=new Headers({'content-type':'text/event-stream',connection:'keep-alive, x-hop, upgrade','keep-alive':'timeout=5','x-hop':'1','x-end':'1',upgrade:'h2c',te:'trailers',trailer:'x-sum','transfer-encoding':'Chunked'}); headers.append('set-cookie','a=1'); headers.append('set-cookie','b=2'); return new Response(sse,{headers}); }),
     route('proxy',()=>fetch(`http://127.0.0.1:${(upstream.address() as AddressInfo).port}/`)),
-    route('nominated',()=>new Response('x',{headers:{connection:'transfer-encoding','transfer-encoding':'chunked'}})),
+    route('stream',()=>fetch(`http://127.0.0.1:${(upstream.address() as AddressInfo).port}/stream`)),
+    route('nominated',()=>new Response('x',{headers:{connection:'transfer-encoding','transfer-encoding':'gzip, chunked'}})),
   ],onDiagnostic:e=>diagnostics.push(e.code)});
-  for (const path of ['/sse','/proxy']) {
+  for (const path of ['/sse','/proxy','/stream']) {
     const r=await call(s,path); assert.equal(r.status,200,path); assert.equal(await r.text(),sse,path);
-    assert.equal(r.headers.get('x-hop'),null,path); assert.equal(r.headers.get('x-end'),'1',path); assert.deepEqual(r.headers.getSetCookie(),['a=1','b=2'],path);
+    for (const name of ['x-hop','upgrade','te','trailer']) assert.equal(r.headers.get(name),null,`${path} ${name}`); assert.equal(r.headers.get('x-end'),'1',path); assert.deepEqual(r.headers.getSetCookie(),['a=1','b=2'],path);
   }
   const nominated=await call(s,'/nominated'); assert.equal(nominated.status,500); await nominated.text();
   assert.deepEqual(diagnostics,['response-framing-error']); await until(()=>drained(s));

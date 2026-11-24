@@ -10,7 +10,7 @@ const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const bunAvailable = spawnSync('bun', ['--version'], { encoding: 'utf8' }).status === 0;
 if (process.env.REQUIRE_BUN === '1' && !bunAvailable) throw new Error('Bun required but unavailable');
 if (process.env.REQUIRE_UPSTREAM === '1') {
-  for (const key of ['DEFUSS_RPC_PACKAGE','DEFUSS_MCP_PACKAGE','DEFUSS_O11Y_PACKAGE','DEFUSS_O11Y_FIXTURE']) if (!process.env[key]) throw new Error(`Release gate requires ${key}`);
+  for (const key of ['DEFUSS_RPC_PACKAGE','DEFUSS_MCP_PACKAGE','DEFUSS_O11Y_PACKAGE']) if (!process.env[key]) throw new Error(`Release gate requires ${key}`);
 }
 const consumer = mkdtempSync(join(tmpdir(), 'defuss-serve-packed-'));
 const run = (command: string, args: string[], cwd: string) => execFileSync(command, args, { cwd, encoding: 'utf8', timeout: 240000, stdio: ['ignore', 'pipe', 'inherit'] });
@@ -44,14 +44,14 @@ try {
     log += run(process.execPath, ['--experimental-strip-types', 'upstream.ts'], consumer);
     if (bunAvailable) log += run('bun', ['upstream.ts'], consumer);
   } else log += 'Actual upstream RPC/MCP: NOT RUN (supply package versions or absolute tarball paths)\n';
-  if (process.env.DEFUSS_O11Y_PACKAGE || process.env.DEFUSS_O11Y_FIXTURE) {
-    if (!process.env.DEFUSS_O11Y_PACKAGE || !process.env.DEFUSS_O11Y_FIXTURE) throw new Error('Set both DEFUSS_O11Y_PACKAGE and DEFUSS_O11Y_FIXTURE');
+  if (process.env.DEFUSS_O11Y_PACKAGE) {
+    // DEFUSS_O11Y_FIXTURE can replace the bundled fixture for another defuss-o11y version.
     run(npm,['install','--ignore-scripts','--no-audit','--no-fund',process.env.DEFUSS_O11Y_PACKAGE],consumer);
-    copyFileSync(resolve(process.env.DEFUSS_O11Y_FIXTURE),join(consumer,'o11y-fixture.ts'));
+    copyFileSync(resolve(process.env.DEFUSS_O11Y_FIXTURE || join(root,'tests/o11y-fixture.ts')),join(consumer,'o11y-fixture.ts'));
     copyFileSync(join(root,'tests/o11y-consumer.ts'),join(consumer,'o11y-consumer.ts'));
     log += run(process.execPath,['--experimental-strip-types','o11y-consumer.ts'],consumer);
     if(bunAvailable)log += run('bun',['o11y-consumer.ts'],consumer);
-  } else log += 'Actual O11y: NOT RUN (upstream package and fixture required)\n';
+  } else log += 'Actual O11y: NOT RUN (DEFUSS_O11Y_PACKAGE required)\n';
   writeFileSync(join(output, 'results.log'), log);
   console.log(log);
 } finally { rmSync(consumer, { recursive: true, force: true }); }

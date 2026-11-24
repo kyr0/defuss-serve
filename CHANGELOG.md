@@ -17,7 +17,8 @@
 - Make lint and typecheck pass with the pinned oxlint 1.90.0 and TypeScript 5.9.3.
 - Node: plugin calls reuse the adapter's Request and signal instead of cloning it, and leases forward the client signal without `AbortSignal.any`. Server CPU per small API or SSE request fell by 23 to 24% and throughput rose by 28 to 29% in an alternating A/B on Node 22.16.
 - Test that a client disconnect aborts a running handler's signal and releases its lease on both runtimes.
-- Drop `Connection`, the fields it names, `Keep-Alive` and `Proxy-Connection` from plugin responses instead of answering 500. defuss-mcp 0.6.0 and the defuss-rpc 4.0.0 upload progress stream send `Connection: keep-alive`, so MCP and RPC upload progress failed. Body framing headers still return 500.
+- Drop hop-by-hop headers from plugin responses instead of answering 500: `Connection` and the fields it names, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Upgrade` and `Transfer-Encoding: chunked`. defuss-mcp 0.6.0 and the defuss-rpc 4.0.0 upload progress stream send `Connection: keep-alive`, so MCP and RPC upload progress failed, and `fetch()` proxy responses failed on `Transfer-Encoding: chunked`. Other transfer codings still return 500.
+- Bundle the defuss-o11y release fixture as `tests/o11y-fixture.ts`; the release workflow defaults to the published defuss-rpc 4.0.0, defuss-mcp 0.6.0 and defuss-o11y 0.3.0.
 - RPC: route `POST /rpc/schema` to the endpoint. The defuss-rpc client fetches its schema with POST, which received 405, so `getRpcClient` failed against `rpcPlugin`.
 - Scope `test:bun` to `./tests/` paths; bare arguments are Bun substring filters and also ran test files from repository copies under `tmp/`.
 
