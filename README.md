@@ -82,6 +82,7 @@ The generic adapter does not define defuss-o11y health semantics or claim compat
 | `GET /assets/main.js` | Static asset if present |
 | `GET /movies/demo.mp4` | Media file; supports byte ranges |
 | `GET /rpc/schema` | Static file if present, otherwise RPC |
+| `POST /rpc/schema` | RPC; the defuss-rpc client fetches its schema this way |
 | `POST /rpc` | RPC; static files never handle POST |
 | `GET /rpc/upload/progress/id` | RPC SSE if no matching static file |
 | `POST /mcp` | MCP |
@@ -164,7 +165,7 @@ A wildcard bind (`0.0.0.0` or `::`) requires explicit `allowedHosts`; an empty `
 
 The default wire-body ceiling is 1 GiB and the default admission limit is 1024. Plugins can narrow the body ceiling/deadline. Response streams, executing handlers, body-bearing uploads and open static descriptors have independent budgets. The stream budget is checked when a response body is available, not before protocol side effects; use handler and per-plugin limits for admission before execution. A bodyless health response can still succeed when stream capacity is exhausted. `maxConnections` is Node-only; configure edge connection limits for Bun.
 
-`executionTimeoutMs` on a plugin sends 504 on expiry and aborts cooperatively, but an uncooperative handler still holds its lease and handler budget until it settles. Transport framing validates response headers and rejects hop-by-hop headers; the Node pump never writes bytes beyond Content-Length and closes a connection after a committed short frame.
+`executionTimeoutMs` on a plugin sends 504 on expiry and aborts cooperatively, but an uncooperative handler still holds its lease and handler budget until it settles. Transport framing validates response headers. It drops `Connection`, the fields it names, `Keep-Alive` and `Proxy-Connection`, and rejects `Transfer-Encoding`, `TE`, `Trailer` and `Upgrade` with 500; the Node pump never writes bytes beyond Content-Length and closes a connection after a committed short frame.
 
 `onLifecycle` measures response-source production, not confirmed network delivery. Native Bun static fast path requires request, stream and descriptor budgets disabled and no lifecycle observer. Native completion accounting cannot safely be promised with the currently implemented BunFile interface.
 

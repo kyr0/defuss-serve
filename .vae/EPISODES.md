@@ -27,3 +27,10 @@
 2026-11-24T01:12:13Z s=5940460f FINDING package.json:test:bun learn=verifier: .vae/VERIFY.py tests.bun-paths
 2026-11-24T01:12:13Z s=5940460f FINDING docs/BENCHMARKS.md:7,31,33,35,46 (B01, B03, P06) learn=none: claim-to-data agreement needs reading; no rule kind can compare prose numbers with result files
 2026-11-24T01:12:13Z s=5940460f FINDING docs/VERIFICATION.md:26-34 (B09, P09) learn=none: staleness of a dated record is not mechanically checkable
+2026-11-24T03:04:43Z s=5940460f DONE fp=ff67ced5f7b1 cov=89.3% paths=ARCH.md,CHANGELOG.md,README.md,docs/VERIFICATION.md(+5)
+2026-11-24T03:04:43Z s=5940460f FINDING src/plugins/rpc.ts:rpcRoutes learn=test: VERIFIED: server.test.ts static-first dispatch test asserts POST /rpc/schema reaches the endpoint; upstream e2e also covers it.
+2026-11-24T03:04:43Z s=5940460f FINDING src/runtime/framing.ts:forbidden learn=test: VERIFIED: regression.test.ts connection-management test fails with 500 on the pre-fix build and passes on Node and Bun, covering mutable headers, immutable fetc
+2026-11-24T03:04:43Z s=5940460f FINDING ARCH.md:51 L03 S06 learn=none: Prose fix; no mechanical check fits.
+2026-11-24T03:04:43Z s=5940460f FINDING docs/VERIFICATION.md defect list P09 learn=none: Prose fix; no mechanical check fits.
+2026-11-24T03:33:07Z s=5940460f DONE fp=df43981a406a cov=89.3% paths=ARCH.md,CHANGELOG.md,README.md,docs/BENCHMARKS.md(+6)
+2026-11-24T03:33:07Z s=5940460f FINDING docs/BENCHMARKS.md:50 B09; docs/VERIFICATION.md:44 B09 learn=none: Prose precision fix; no mechanical check fits.

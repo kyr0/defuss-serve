@@ -1,16 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Bun: set `reusePort: false`. Bun 1.4.5 enables `SO_REUSEPORT` when development mode is off, so `start()` on an occupied port succeeded and shared connections.
-- Node: close the bound socket when listener setup fails after binding (for example an IPv6 zone host), instead of leaking a listener that keeps the port and process alive. Reject an empty `host`, which Node binds to every interface.
-- Document that Bun 1.4.5 drops a declared Content-Length and sends chunked for stream bodies of 256 bytes or more.
-- `make start` runs the example server detached; add `stop`, `restart`, `status`, `log` and `metrics` verbs. The example logs ISO-8601 timestamps and levels.
-- Make lint and typecheck pass with the pinned oxlint 1.90.0 and TypeScript 5.9.3.
-- Node: plugin calls reuse the adapter's Request and signal instead of cloning it, and leases forward the client signal without `AbortSignal.any`. Server CPU per small API or SSE request fell by 23 to 24% and throughput rose by 28 to 29% in an alternating A/B on Node 22.16.
-- Test that a client disconnect aborts a running handler's signal and releases its lease on both runtimes.
-- Scope `test:bun` to `./tests/` paths; bare arguments are Bun substring filters and also ran test files from repository copies under `tmp/`.
-
 ## 0.3.0
 
 - Enforce exclusive endpoint ownership across server instances, wrappers and module formats.
@@ -21,6 +10,16 @@
 - Make declarative routes sufficient without a redundant matcher.
 - Add generated invariant checks, raw pipelining regressions, resource endurance, framework benchmark modes and a tracked-lockfile release gate.
 - Change `maxConcurrentStreams` to count actual bodies after handler return. Use handler or plugin budgets for pre-execution limits.
+- Bun: set `reusePort: false`. Bun 1.4.5 enables `SO_REUSEPORT` when development mode is off, so `start()` on an occupied port succeeded and shared connections.
+- Node: close the bound socket when listener setup fails after binding (for example an IPv6 zone host), instead of leaking a listener that keeps the port and process alive. Reject an empty `host`, which Node binds to every interface.
+- Document that Bun 1.4.5 drops a declared Content-Length and sends chunked for stream bodies of 256 bytes or more.
+- `make start` runs the example server detached; add `stop`, `restart`, `status`, `log` and `metrics` verbs. The example logs ISO-8601 timestamps and levels.
+- Make lint and typecheck pass with the pinned oxlint 1.90.0 and TypeScript 5.9.3.
+- Node: plugin calls reuse the adapter's Request and signal instead of cloning it, and leases forward the client signal without `AbortSignal.any`. Server CPU per small API or SSE request fell by 23 to 24% and throughput rose by 28 to 29% in an alternating A/B on Node 22.16.
+- Test that a client disconnect aborts a running handler's signal and releases its lease on both runtimes.
+- Drop `Connection`, the fields it names, `Keep-Alive` and `Proxy-Connection` from plugin responses instead of answering 500. defuss-mcp 0.6.0 and the defuss-rpc 4.0.0 upload progress stream send `Connection: keep-alive`, so MCP and RPC upload progress failed. Body framing headers still return 500.
+- RPC: route `POST /rpc/schema` to the endpoint. The defuss-rpc client fetches its schema with POST, which received 405, so `getRpcClient` failed against `rpcPlugin`.
+- Scope `test:bun` to `./tests/` paths; bare arguments are Bun substring filters and also ran test files from repository copies under `tmp/`.
 
 ## 0.2.0
 

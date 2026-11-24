@@ -47,7 +47,7 @@ Server CPU per request fell by 24 % for the small route and 23 % for SSE; throug
 
 ## Earlier offline record
 
-These v0.3.0 numbers came from an offline Linux container with Node.js 22.16.0: process-isolated loopback HTTP, 32 concurrent requests, warmup before measurement. Two complete matched rounds, 800 small/conditional requests, up to 500 SSE requests, 400 range requests and 48 full media transfers per round and mode. Arithmetic mean of the per-round rates, rounded. Status and transferred byte counts are asserted; media payload checks sample chunk boundaries. The v0.2.0 baseline is the actual previous offline package, extracted without rebuilding.
+These numbers came from an earlier offline v0.3.0 build, before the 2026-11-24 fixes, in a Linux container with Node.js 22.16.0: process-isolated loopback HTTP, 32 concurrent requests, warmup before measurement. Two complete matched rounds, 800 small/conditional requests, up to 500 SSE requests, 400 range requests and 48 full media transfers per round and mode. Arithmetic mean of the per-round rates, rounded. Status and transferred byte counts are asserted; media payload checks sample chunk boundaries. The v0.2.0 baseline is the actual previous offline package, extracted without rebuilding.
 
 | Case | v0.2 immutable | v0.3 immutable | v0.2 live | v0.3 live | Native Node reference |
 | --- | ---: | ---: | ---: | ---: | ---: |

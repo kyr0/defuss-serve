@@ -10,7 +10,8 @@ export interface RpcPluginOptions extends TransportLimits {
 }
 const rpcRoutes: readonly ServeRoute[] = [
   { path: '/rpc', methods: ['POST'] },
-  { path: '/rpc/schema', methods: ['GET'] },
+  // VERIFIED: the defuss-rpc 2.0.0 to 4.0.0 client fetches the schema with POST; GET-only answered it 405.
+  { path: '/rpc/schema', methods: ['GET', 'POST'] },
   { path: '/rpc/upload', methods: ['POST'] },
   { path: '/rpc/upload', prefix: true, methods: ['HEAD'] },
   { path: '/rpc/upload/progress', prefix: true, methods: ['GET'] },

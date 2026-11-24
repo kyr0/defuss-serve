@@ -2,7 +2,7 @@ import { listenBun } from './runtime/bun.js';
 import { bunRuntime } from './runtime/bun-types.js';
 import { listenNode } from './runtime/node.js';
 import { claim, release as releaseOwner } from './ownership.js';
-import { validateResponse } from './runtime/framing.js';
+import { dropConnectionFields, validateResponse } from './runtime/framing.js';
 import type { StaticFilePlan, StaticResult } from './static/plan.js';
 import type { Listener, DispatchResult, Incoming } from './runtime/types.js';
 import { StaticStore } from './static/serve.js';
@@ -343,7 +343,7 @@ class Server implements ServeServer {
         await cancel(response).catch(noop);
         response = new Response(null, { status: response.status, headers: response.headers });
       }
-      response = applyCors(incoming, response, this.options.cors);
+      response = applyCors(incoming, dropConnectionFields(response), this.options.cors);
       let length: number | undefined;
       try { length = validateResponse(response, !!plan || !!response.body, incoming.method); }
       catch (error) {

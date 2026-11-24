@@ -181,6 +181,8 @@ test('static-first dispatch, real HTTP Fetch endpoints, SPA last, method ownersh
   await status(server, '/rpc/upload/id', 200, { method: 'HEAD' });
   await status(server, '/rpc/upload/progress/id', 200);
   await status(server, '/rpc/download', 200);
+  // The upstream RPC client requests its schema with POST, which a static file never answers.
+  assert.deepEqual(await (await status(server, '/rpc/schema', 200, { method: 'POST' })).json(), { method: 'POST', value: '' });
   assert.equal((await (await status(server, '/mcp', 200, { method: 'POST', body: '{}' })).json()).protocol, 'mcp');
   await status(server, '/mcp/', 200, { method: 'DELETE' });
   assert.equal(await (await status(server, '/healthz', 200)).text(), 'healthy');
