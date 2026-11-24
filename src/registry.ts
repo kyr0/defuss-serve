@@ -101,11 +101,14 @@ export function waitIdle(e: Entry): Promise<void> {
 export async function waitUntil(promise: Promise<unknown>, deadline: number): Promise<boolean> { return within(promise, remaining(deadline)); }
 export interface Lease { signal: AbortSignal; abort(reason: unknown): void; release(): void }
 /** Abort requests without pretending that an uncooperative handler or cancel hook has completed. */
-export function acquire(e: Entry, request: Request): Lease {
-  const controller = new AbortController();
-  const signal = AbortSignal.any([controller.signal, request.signal]);
+export function acquire(e: Entry, client: AbortSignal, scope?: AbortController): Lease {
+  // VERIFIED: (disconnect test) a supplied scope already aborts on disconnect; otherwise forward the client signal without AbortSignal.any.
+  const controller = scope ?? new AbortController();
+  const forward = scope ? undefined : () => controller.abort(client.reason);
+  if (forward) { if (client.aborted) forward(); else client.addEventListener('abort', forward, { once: true }); }
   e.active.add(controller);
-  return { signal, abort: reason => controller.abort(reason), release() {
+  return { signal: controller.signal, abort: reason => controller.abort(reason), release() {
+    if (forward) client.removeEventListener('abort', forward);
     if (!e.active.delete(controller)) return;
     if (!e.active.size) { for (const waiter of e.waiters) waiter(); e.waiters.clear(); }
   } };

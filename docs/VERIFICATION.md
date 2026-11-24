@@ -17,21 +17,22 @@ The built-in Node coverage gate measures the executed ESM build once. Node canno
 Environment: macOS arm64, Node 22.16.0 and Bun 1.4.5 from `mise.toml`, pkgroll 2.29.0, oxlint 1.90.0, TypeScript 5.9.3, Playwright 1.64.1. Command: `mise exec -- make verify`, exit 0.
 
 - pkgroll ESM/CommonJS build, repository policy, oxlint with `--deny-warnings` and strict typecheck: passed.
-- Node HTTP tests: 37 tests, 36 passed, 0 failed, 1 skipped. The skipped test is the native Bun file path, which only Bun can execute.
-- Bun HTTP tests: 37 tests, 37 passed, 0 failed.
-- ESM production-artifact coverage: 88.95% lines, 90.21% branches, 92.35% functions, above the 85/75/80 thresholds.
+- Node HTTP tests: 38 tests, 37 passed, 0 failed, 1 skipped. The skipped test is the native Bun file path, which only Bun can execute.
+- Bun HTTP tests: 38 tests across 3 files, 38 passed, 0 failed.
+- ESM production-artifact coverage: 89.13% lines, 89.96% branches, 91.92% functions, above the 85/75/80 thresholds.
 - Packed consumer on Node and Bun: ESM and CommonJS declarations and HTTP checks passed.
 - Browser media seeking: Chromium and WebKit, each against Node and Bun listeners, passed with 206 range responses.
 - Actual upstream RPC/MCP and O11y: not run, because no upstream packages or fixture were supplied.
-- `make release-verify`: not run. The directory is not a git repository, so `make lock-check` cannot find a tracked `bun.lock`.
-- Benchmarks: not rerun. [Benchmark evidence](BENCHMARKS.md) records the earlier offline Linux rounds.
+- `make lock-check`: passed against the tracked `bun.lock` with a frozen install. `make release-verify` was not run, because it also requires the upstream packages and fixture.
+- Benchmarks: `make bench` and `make bench-frameworks` ran on this machine. [Benchmark evidence](BENCHMARKS.md) has the results and an A/B of the Node request-path change.
 
-The first runs with the real toolchain found these defects, now fixed with regression evidence:
+The first runs with the real toolchain found these defects. Each has a fix and a regression test or verifier rule:
 
-- oxlint rejected two intentional control-character regular expressions; they carry justified inline exceptions.
-- TypeScript 5.9.3 rejected `Buffer` request bodies in a test; the test now passes `Uint8Array`.
-- Bun 1.4.5 enables `SO_REUSEPORT` when development mode is off, so a second server on an occupied port started. The Bun adapter now sets `reusePort: false`; the port-collision test passes on Bun, and `.vae/VERIFY.py` checks the option.
-- A host that binds but cannot be expressed as a URL, such as `::1%lo0`, rejected `start()` while leaving the socket bound. The Node adapter now closes it; a regression test reclaims the port. An empty `host` is rejected.
+- oxlint rejected two intentional control-character regular expressions. They carry justified inline exceptions.
+- TypeScript 5.9.3 rejected `Buffer` request bodies in a test. The test passes `Uint8Array`.
+- Bun 1.4.5 enables `SO_REUSEPORT` when development mode is off, so a second server on an occupied port started. The Bun adapter sets `reusePort: false`, the port-collision test passes on Bun, and `.vae/VERIFY.py` checks the option.
+- A host that binds but cannot be expressed as a URL, such as `::1%lo0`, rejected `start()` while leaving the socket bound. The Node adapter closes the socket, a regression test reclaims the port, and an empty `host` is rejected.
+- `bun test tests/*.test.ts` treated its arguments as substring filters, so a repository copy under `tmp/` raised the Bun suite to 75 tests. The script passes `./tests/` paths, and `.vae/VERIFY.py` checks it.
 
 Bun 1.4.5 sends any stream body of 256 bytes or more with chunked transfer encoding and drops its declared Content-Length; raw-socket probes confirmed this for default, `direct`, `bytes` and async-iterator streams. Tests accept a missing Content-Length on Bun but never a wrong one, and still check exact bytes.
 

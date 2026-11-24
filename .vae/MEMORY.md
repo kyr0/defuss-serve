@@ -10,3 +10,5 @@
 - VERIFIED[leases] Cancellation is not completion: hold leases until handler and source cancellation settle; a 504 does not end the handler BC delayed-cancel failure; deadline test.
 - VERIFIED[coverage] Count the ESM dist once; CJS is verified by the packed consumer BC duplicate-artifact run 55.81% (validation/coverage-duplicate-artifacts.log).
 - VERIFIED[toolchain] PATH has bun 1.4.3 and node 26; run gates via `mise exec --` for the pinned bun 1.4.5 and node 22.16.0 BC mise ls; verify run 2026-11-24.
+- VERIFIED[Node 22 perf] API CPU is undici Request/signal churn, not routing: avoid per-call Request clones and AbortSignal.any BC alternating A/B 6x30k req, 48->37us/req, 2026-11-24
+- VERIFIED[Bun static perf] Tracked file bodies cost ~4x native CPU from JS-stream consumption; fewer layers or Bun.file(fd) streams do not help BC 2026-11-24 probe

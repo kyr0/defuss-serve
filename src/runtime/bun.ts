@@ -16,7 +16,7 @@ export const listenBun: Listen = async (options, dispatch) => {
     maxRequestBodySize: options.maxBodyBytes ?? 1024 ** 3,
     tls: options.tls,
     async fetch(request, listener) {
-      const result = await dispatch(request, listener.requestIP(request)?.address);
+      const result = await dispatch(request, { peer: listener.requestIP(request)?.address, client: request.signal });
       let response: Response | undefined;
       const finish: typeof result.finish = (phase, bytes) => {
         if (result.file) void result.file.close().then(() => result.finish(phase, bytes), () => result.finish('error', bytes));

@@ -24,5 +24,6 @@ RULES = [
     {"id": "tests.no-mocks", "kind": "not_regex", "glob": "tests/*.ts", "pattern": r"\b(?:vi|jest)\.(?:mock|fn|spyOn)\(|sinon\.", "claim": "Tests use real HTTP listeners and files."},
     {"id": "ci.verify", "kind": "contains", "path": ".github/workflows/verify.yml", "text": "run: make verify", "claim": "CI exercises the same verification verbs."},
     {"id": "bun.no-reuse-port", "kind": "contains", "path": "src/runtime/bun.ts", "text": "reusePort: false", "claim": "Bun 1.4 development:false implies SO_REUSEPORT; the listener must fail on an occupied port."},
+    {"id": "tests.bun-paths", "kind": "contains", "path": "package.json", "text": "bun test --timeout 15000 ./tests/", "claim": "Bun treats bare test arguments as substring filters; ./ paths keep worktree copies under tmp/ out of the suite."},
     {"id": "e2e.artifact", "kind": "contains", "path": "scripts/e2e.ts", "text": "--pack-destination", "claim": "E2E exercises the packed artifact."},
 ]

@@ -44,7 +44,7 @@
     "lint": "oxlint --deny-warnings src tests scripts examples",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --experimental-strip-types --test --test-timeout=30000 tests/*.test.ts",
-    "test:bun": "bun test --timeout 15000 tests/*.test.ts",
+    "test:bun": "bun test --timeout 15000 ./tests/*.test.ts",
     "coverage": "node --experimental-strip-types scripts/coverage.ts",
     "e2e": "node --experimental-strip-types scripts/e2e.ts",
     "bench": "node --experimental-strip-types scripts/bench.ts",

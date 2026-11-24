@@ -21,3 +21,9 @@
 2026-11-24T00:57:34Z s=5940460f FINDING docs/BENCHMARKS.md:15 (B09) learn=none: staleness of an environment claim is not mechanically checkable
 2026-11-24T00:57:34Z s=5940460f FINDING README.md:163 (A10) learn=none: paragraph size is a reading judgment
 2026-11-24T00:57:34Z s=5940460f FINDING src/static/serve.ts:15 StaticStore learn=none: comment placement is not mechanically checkable by a rule kind
+2026-11-24T01:12:13Z s=5940460f DONE fp=1ecabcbdd6bc cov=89.1% paths=ARCH.md,CHANGELOG.md,docs/BENCHMARKS.md,docs/VERIFICATION.md(+7)
+2026-11-24T01:12:13Z s=5940460f FINDING src/server.ts:dispatch, src/registry.ts:acquire, src/runtime/node.ts:handle learn=memory: .vae/MEMORY.md [Node 22 perf]; a CPU budget is load-dependent, so no timing test
+2026-11-24T01:12:13Z s=5940460f FINDING tests/regression.test.ts (test gap) learn=test: tests/regression.test.ts 'client disconnect aborts a running handler signal and releases its lease', mutation-checked on Node and Bun
+2026-11-24T01:12:13Z s=5940460f FINDING package.json:test:bun learn=verifier: .vae/VERIFY.py tests.bun-paths
+2026-11-24T01:12:13Z s=5940460f FINDING docs/BENCHMARKS.md:7,31,33,35,46 (B01, B03, P06) learn=none: claim-to-data agreement needs reading; no rule kind can compare prose numbers with result files
+2026-11-24T01:12:13Z s=5940460f FINDING docs/VERIFICATION.md:26-34 (B09, P09) learn=none: staleness of a dated record is not mechanically checkable

@@ -81,24 +81,26 @@ async function send(result: DispatchResult, req: IncomingMessage, res: ServerRes
 }
 
 async function handle(req: IncomingMessage, res: ServerResponse, dispatch: Dispatch, secure: boolean): Promise<void> {
-  const abort = new AbortController();
-  const onClose = () => { if (!res.writableFinished) abort.abort(new Error('Client disconnected')); };
-  const onRequestClose = () => { if (!req.complete) abort.abort(new Error('Request incomplete')); };
+  // VERIFIED: (execution-deadline test) the client signal must survive a lease abort so a 504 is still sent; scope is the plugin signal.
+  const client = new AbortController(), scope = new AbortController();
+  const disconnect = (reason: Error) => { client.abort(reason); scope.abort(reason); };
+  const onClose = () => { if (!res.writableFinished) disconnect(new Error('Client disconnected')); };
+  const onRequestClose = () => { if (!req.complete) disconnect(new Error('Request incomplete')); };
   req.once('close', onRequestClose); res.once('close', onClose);
   try {
-    let request: Request;
+    let request: Request, url: URL;
     try {
-      const url = requestUrl(req, secure);
+      url = requestUrl(req, secure);
       const headers = new Headers();
       for (let i = 0; i < req.rawHeaders.length; i += 2) headers.append(req.rawHeaders[i], req.rawHeaders[i + 1]);
       const method = req.method ?? 'GET';
       const body = method !== 'GET' && method !== 'HEAD' && (headers.has('content-length') || headers.has('transfer-encoding'))
         ? Readable.toWeb(req, { strategy: { highWaterMark: 64 * 1024, size: (chunk: Uint8Array) => chunk.byteLength } }) as ReadableStream<Uint8Array> : undefined;
-      request = new Request(url, { method, headers, body, signal: abort.signal, ...(body ? { duplex: 'half' } : {}) } as RequestInit);
+      request = new Request(url, { method, headers, body, signal: scope.signal, ...(body ? { duplex: 'half' } : {}) } as RequestInit);
     } catch {
       res.writeHead(400, { Connection: 'close' }).end('Bad Request'); return;
     }
-    const result = await dispatch(request, req.socket.remoteAddress);
+    const result = await dispatch(request, { peer: req.socket.remoteAddress, client: client.signal, scope, url });
     if (result.response.headers.get('content-type')?.toLowerCase().startsWith('text/event-stream')) res.setTimeout(0);
     // If a protocol rejected an unread upload, close instead of draining attacker-controlled data.
     if (!req.complete) res.setHeader('Connection', 'close');

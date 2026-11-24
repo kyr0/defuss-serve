@@ -96,6 +96,14 @@ test('independent handler and plugin budgets and execution deadline retain uncoo
   await s.removePlugin('slow');assert.equal(closed,false);assert.equal(s.stats.pendingCleanup,1);release.resolve();await until(()=>closed&&drained(s));
 });
 
+test('client disconnect aborts a running handler signal and releases its lease', async t=>{
+  const entered=deferred();let reason:unknown;
+  const s=await server(t,{plugins:[route('wait',r=>new Promise<Response>(resolve=>{r.signal.addEventListener('abort',()=>{reason=r.signal.reason;resolve(new Response('late'));},{once:true});entered.resolve();}))]});
+  const controller=new AbortController();const pending=call(s,'/wait',{signal:controller.signal}).catch(()=>{});
+  await entered.promise;controller.abort();await pending;
+  await until(()=>reason!==undefined&&drained(s));assert.ok(reason instanceof Error);
+});
+
 test('actual stream and descriptor budgets do not block bodyless health checks', async t=>{
   const {publicDir}=await fixture(t);const handle=await open(join(publicDir,'media.bin'),'w');await handle.truncate(64*1024*1024);await handle.close();
   const s=await server(t,{publicDir,staticMode:'immutable',maxOpenStaticFiles:1,maxConcurrentStreams:1,plugins:[route('health',()=>new Response(null,{status:204})),route('body',()=>new Response('data'))]});

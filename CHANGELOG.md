@@ -7,6 +7,9 @@
 - Document that Bun 1.4.5 drops a declared Content-Length and sends chunked for stream bodies of 256 bytes or more.
 - `make start` runs the example server detached; add `stop`, `restart`, `status`, `log` and `metrics` verbs. The example logs ISO-8601 timestamps and levels.
 - Make lint and typecheck pass with the pinned oxlint 1.90.0 and TypeScript 5.9.3.
+- Node: plugin calls reuse the adapter's Request and signal instead of cloning it, and leases forward the client signal without `AbortSignal.any`. Server CPU per small API or SSE request fell by 23 to 24% and throughput rose by 28 to 29% in an alternating A/B on Node 22.16.
+- Test that a client disconnect aborts a running handler's signal and releases its lease on both runtimes.
+- Scope `test:bun` to `./tests/` paths; bare arguments are Bun substring filters and also ran test files from repository copies under `tmp/`.
 
 ## 0.3.0
 

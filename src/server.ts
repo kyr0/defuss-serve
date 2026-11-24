@@ -4,7 +4,7 @@ import { listenNode } from './runtime/node.js';
 import { claim, release as releaseOwner } from './ownership.js';
 import { validateResponse } from './runtime/framing.js';
 import type { StaticFilePlan, StaticResult } from './static/plan.js';
-import type { Listener, DispatchResult } from './runtime/types.js';
+import type { Listener, DispatchResult, Incoming } from './runtime/types.js';
 import { StaticStore } from './static/serve.js';
 import { acquire, entry, remaining, Routes, validate, waitIdle, waitUntil } from './registry.js';
 import type { Entry, Lease } from './registry.js';
@@ -201,7 +201,7 @@ class Server implements ServeServer {
       await this.closeEntry(found, performance.now() + this.timeout); return true;
     });
   }
-  private dispatch = async (incoming: Request, peer?: string): Promise<DispatchResult> => {
+  private dispatch = async (incoming: Request, { peer, client, scope, url: parsed }: Incoming): Promise<DispatchResult> => {
     const observed = this.options.onLifecycle || this.options.onRequest;
     const started = observed ? performance.now() : 0;
     let handler = 'http', route = 'unmatched';
@@ -232,7 +232,7 @@ class Server implements ServeServer {
       plan = file; return file.response;
     };
     try {
-      const url = new URL(incoming.url);
+      const url = parsed ?? new URL(incoming.url);
       const path = url.pathname.replace(/\/+$/, '') || '/';
       const host = incoming.headers.get('host');
       const authority = host && !/[\s/\\@?#%,]/.test(host) ? host.toLowerCase() === url.host ? url : (() => { try { return new URL(`${url.protocol}//${host}`); } catch { return undefined; } })() : undefined;
@@ -269,12 +269,12 @@ class Server implements ServeServer {
                 response = reject(503, 'Plugin Busy');
               } else {
               if (request.body) { upload = true; this.activeUploads++; }
-              lease = acquire(e, request);
+              lease = acquire(e, client, scope);
               const limit = Math.min(this.options.maxBodyBytes ?? GiB, e.plugin.maxBodyBytes ?? Infinity);
               const globalTimeout = this.options.bodyTimeoutMs ?? 300000;
               const localTimeout = e.plugin.bodyTimeoutMs ?? 0;
               const bodyTimeout = Math.min(globalTimeout || Infinity, localTimeout || Infinity);
-              const scoped = new Request(request, { signal: lease.signal });
+              const scoped = scope ? request : new Request(request, { signal: lease.signal });
               const result = boundBody(scoped, limit, Number.isFinite(bodyTimeout) ? bodyTimeout : 0);
               if (result instanceof Response) response = result;
               else {
@@ -337,8 +337,8 @@ class Server implements ServeServer {
     const failure = bounded?.failure();
     try {
       if (failure) { await cancel(response).catch(noop); response = reject(failure, failure === 408 ? 'Request Timeout' : 'Payload Too Large'); }
-      const signal = executionExpired ? incoming.signal : lease?.signal ?? incoming.signal;
-      if (signal.aborted) { await cancel(response, signal.reason).catch(noop); finish('cancel', 0); return {response: new Response(null, { status: 503 }), signal: incoming.signal, finish}; }
+      const signal = executionExpired ? client : lease?.signal ?? client;
+      if (signal.aborted) { await cancel(response, signal.reason).catch(noop); finish('cancel', 0); return {response: new Response(null, { status: 503 }), signal: client, finish}; }
       if (incoming.method === 'HEAD' && (response.body || plan)) {
         await cancel(response).catch(noop);
         response = new Response(null, { status: response.status, headers: response.headers });
@@ -367,7 +367,7 @@ class Server implements ServeServer {
     } catch (error) {
       await cancel(response, error).catch(noop);
       finish('error', 0); this.diagnostic({ code: 'request-error' });
-      return {response: new Response('Internal Server Error', { status: 500 }), signal: incoming.signal, finish};
+      return {response: new Response('Internal Server Error', { status: 500 }), signal: client, finish};
     }
   };
 }
