@@ -1,0 +1,5 @@
+v22.16.0
+Version 5.8.3
+10.9.2
+Linux 6.18.57 x86_64
+39231e0d9c6fb9133b1fb904e39104b8fe3d3c12dfbf64f5ac31f399c04cc2a3  ../defuss-serve-0.2.0/validation/defuss-serve-0.2.0-offline-build.tgz

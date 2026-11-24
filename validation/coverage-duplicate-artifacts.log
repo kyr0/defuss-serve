@@ -1,0 +1,297 @@
+TAP version 13
+# (node:1856) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: immutable manifest: misses, conditional requests, immutable cache contract, aliases, deployment mutation
+ok 1 - immutable manifest: misses, conditional requests, immutable cache contract, aliases, deployment mutation
+  ---
+  duration_ms: 153.313725
+  type: 'test'
+  ...
+# Subtest: live bounded negative cache expiry and static-shadow policy on startup and registration
+ok 2 - live bounded negative cache expiry and static-shadow policy on startup and registration
+  ---
+  duration_ms: 137.731839
+  type: 'test'
+  ...
+# Subtest: uncooperative handler stays quarantined after drain deadline; no premature close or replacement
+ok 3 - uncooperative handler stays quarantined after drain deadline; no premature close or replacement
+  ---
+  duration_ms: 29.058533
+  type: 'test'
+  ...
+# Subtest: slow cleanup is bounded by one stop deadline; late rejections diagnosed
+ok 4 - slow cleanup is bounded by one stop deadline; late rejections diagnosed
+  ---
+  duration_ms: 30.728364
+  type: 'test'
+  ...
+# Subtest: cancel hook completion is part of drain; resource cleanup never races cancellation
+ok 5 - cancel hook completion is part of drain; resource cleanup never races cancellation
+  ---
+  duration_ms: 39.42087
+  type: 'test'
+  ...
+# Subtest: admission limits reject before side effects and lifecycle bytes count source production
+ok 6 - admission limits reject before side effects and lifecycle bytes count source production
+  ---
+  duration_ms: 10.002911
+  type: 'test'
+  ...
+# Subtest: per-plugin body limits, absolute body-read deadline, host and forwarding trust
+ok 7 - per-plugin body limits, absolute body-read deadline, host and forwarding trust
+  ---
+  duration_ms: 66.488704
+  type: 'test'
+  ...
+# Subtest: compiled dispatch supports method overlap, prefix boundaries, and dynamic fallback collision
+ok 8 - compiled dispatch supports method overlap, prefix boundaries, and dynamic fallback collision
+  ---
+  duration_ms: 14.97395
+  type: 'test'
+  ...
+# Subtest: startup deadline quarantines pending initialization until it settles
+ok 9 - startup deadline quarantines pending initialization until it settles
+  ---
+  duration_ms: 53.879177
+  type: 'test'
+  ...
+# Subtest: slow static consumer does not eagerly produce a complete large file and cancellation releases budget
+ok 10 - slow static consumer does not eagerly produce a complete large file and cancellation releases budget
+  ---
+  duration_ms: 97.201076
+  type: 'test'
+  ...
+# Subtest: repeated atomic plugin changes, stable error telemetry and no leaked leases
+ok 11 - repeated atomic plugin changes, stable error telemetry and no leaked leases
+  ---
+  duration_ms: 39.714865
+  type: 'test'
+  ...
+# (node:1857) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: invalid response headers and forbidden framing cancel the body and release every lease
+ok 12 - invalid response headers and forbidden framing cancel the body and release every lease
+  ---
+  duration_ms: 81.681083
+  type: 'test'
+  ...
+# Subtest: raw HTTP framing: no overflow bytes, no reused connection after short body, exact framing survives keep-alive
+ok 13 - raw HTTP framing: no overflow bytes, no reused connection after short body, exact framing survives keep-alive
+  ---
+  duration_ms: 48.839319
+  type: 'test'
+  ...
+# Subtest: exclusive endpoint ownership across wrappers, servers and CJS/ESM
+ok 14 - exclusive endpoint ownership across wrappers, servers and CJS/ESM
+  ---
+  duration_ms: 23.49065
+  type: 'test'
+  ...
+# Subtest: matcher-only static shadow policy checks manifest and real request predicates
+ok 15 - matcher-only static shadow policy checks manifest and real request predicates
+  ---
+  duration_ms: 16.842467
+  type: 'test'
+  ...
+# Subtest: build-time SHA-256 manifests yield representation-specific strong validators and If-Range
+ok 16 - build-time SHA-256 manifests yield representation-specific strong validators and If-Range
+  ---
+  duration_ms: 175.877495
+  type: 'test'
+  ...
+# Subtest: independent handler and plugin budgets and execution deadline retain uncooperative work
+ok 17 - independent handler and plugin budgets and execution deadline retain uncooperative work
+  ---
+  duration_ms: 62.175595
+  type: 'test'
+  ...
+# Subtest: actual stream and descriptor budgets do not block bodyless health checks
+ok 18 - actual stream and descriptor budgets do not block bodyless health checks
+  ---
+  duration_ms: 23.763814
+  type: 'test'
+  ...
+# Subtest: body-bearing upload admission is independent of bodyless calls
+ok 19 - body-bearing upload admission is independent of bodyless calls
+  ---
+  duration_ms: 11.504703
+  type: 'test'
+  ...
+# Subtest: deterministic generated range, path and validator invariants
+ok 20 - deterministic generated range, path and validator invariants
+  ---
+  duration_ms: 236.354877
+  type: 'test'
+  ...
+# {"endurance":{"requests":732,"fdsBefore":57,"fdsAfter":57,"memoryBefore":{"heap":24801640,"rss":109326336},"memoryAfter":{"heap":46414968,"rss":144191488}}}
+# Subtest: resource endurance: repeated file reads, disconnects, plugin replacements, bounded counters and descriptors
+ok 21 - resource endurance: repeated file reads, disconnects, plugin replacements, bounded counters and descriptors
+  ---
+  duration_ms: 1123.578629
+  type: 'test'
+  ...
+# Subtest: Node connection admission rejects excess sockets and releases capacity on close
+ok 22 - Node connection admission rejects excess sockets and releases capacity on close
+  ---
+  duration_ms: 55.399392
+  type: 'test'
+  ...
+# (node:1858) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: static content, directory redirects, MIME, HEAD, hidden and escaping files, live updates
+ok 23 - static content, directory redirects, MIME, HEAD, hidden and escaping files, live updates
+  ---
+  duration_ms: 242.42971
+  type: 'test'
+  ...
+# Subtest: single, open, suffix, clipped, empty and unsatisfiable byte ranges; malformed and multi-range ignored
+ok 24 - single, open, suffix, clipped, empty and unsatisfiable byte ranges; malformed and multi-range ignored
+  ---
+  duration_ms: 47.227193
+  type: 'test'
+  ...
+# Subtest: conditional requests and representation-specific caching
+ok 25 - conditional requests and representation-specific caching
+  ---
+  duration_ms: 65.803946
+  type: 'test'
+  ...
+# Subtest: static-first dispatch, real HTTP Fetch endpoints, SPA last, method ownership and diagnostics
+ok 26 - static-first dispatch, real HTTP Fetch endpoints, SPA last, method ownership and diagnostics
+  ---
+  duration_ms: 49.280082
+  type: 'test'
+  ...
+# Subtest: live plugin registration, collision validation, rollback, shutdown and independent listeners
+ok 27 - live plugin registration, collision validation, rollback, shutdown and independent listeners
+  ---
+  duration_ms: 10.441279
+  type: 'test'
+  ...
+# Subtest: streaming responses drain on removal and cancel on timeout or client disconnect
+ok 28 - streaming responses drain on removal and cancel on timeout or client disconnect
+  ---
+  duration_ms: 550.99574
+  type: 'test'
+  ...
+# Subtest: CORS, cookies, streamed body bounds, opaque errors and observer isolation
+ok 29 - CORS, cookies, streamed body bounds, opaque errors and observer isolation
+  ---
+  duration_ms: 26.517401
+  type: 'test'
+  ...
+# Subtest: invalid configuration, route declarations, startup and close failures
+ok 30 - invalid configuration, route declarations, startup and close failures
+  ---
+  duration_ms: 9.769254
+  type: 'test'
+  ...
+# Subtest: undeclared runtime collisions fail closed; malformed targets are rejected on Node
+ok 31 - undeclared runtime collisions fail closed; malformed targets are rejected on Node
+  ---
+  duration_ms: 8.728424
+  type: 'test'
+  ...
+# Subtest: legacy RPC call guard, compressed size limits and untouched upload bytes
+ok 32 - legacy RPC call guard, compressed size limits and untouched upload bytes
+  ---
+  duration_ms: 41.818114
+  type: 'test'
+  ...
+# Subtest: large sparse media supports precise bounded seeking without whole-file reads
+ok 33 - large sparse media supports precise bounded seeking without whole-file reads
+  ---
+  duration_ms: 11.537161
+  type: 'test'
+  ...
+# Subtest: listener shutdown forces an open response to cancel after its grace period
+ok 34 - listener shutdown forces an open response to cancel after its grace period
+  ---
+  duration_ms: 34.919169
+  type: 'test'
+  ...
+# Subtest: TLS listener serves an actual certificate-validated HTTPS request
+ok 35 - TLS listener serves an actual certificate-validated HTTPS request
+  ---
+  duration_ms: 120.754203
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2209.258739
+# Error: 55.81% line coverage does not meet threshold of 85%.
+# Error: 68.52% function coverage does not meet threshold of 80%.
+# start of coverage report
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------
+# file                | line % | branch % | funcs % | uncovered lines
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------
+# dist                |        |          |         | 
+#  http.cjs           |   9.09 |   100.00 |    0.00 | 9-24 26-41 43-70 72-83 87-154
+#  http.js            |  95.89 |    89.29 |   90.91 | 58-61 108-109
+#  index.cjs          | 100.00 |   100.00 |  100.00 | 
+#  index.mjs          | 100.00 |   100.00 |  100.00 | 
+#  lifecycle.cjs      |   5.68 |   100.00 |    0.00 | 6-88
+#  lifecycle.js       |   3.53 |   100.00 |    0.00 | 4-85
+#  ownership.cjs      |  75.86 |    50.00 |   66.67 | 22-23 25-29
+#  ownership.js       | 100.00 |    90.91 |  100.00 | 
+#  plugins.mjs        | 100.00 |   100.00 |  100.00 | 
+#  plugins            |        |          |         | 
+#   endpoint.cjs      |  33.33 |   100.00 |    0.00 | 8-14 16-24
+#   endpoint.js       | 100.00 |    81.82 |   83.33 | 
+#   mcp.js            | 100.00 |   100.00 |  100.00 | 
+#   o11y.js           | 100.00 |   100.00 |  100.00 | 
+#   rpc.js            | 100.00 |    88.46 |   77.78 | 
+#  registry.cjs       |  44.00 |    36.36 |   35.29 | 31-39 68-73 75-95 98-111 113-123 125-126 129-135 137-150
+#  registry.js        | 100.00 |    96.49 |  100.00 | 
+#  runtime            |        |          |         | 
+#   bun-types.cjs     | 100.00 |   100.00 |  100.00 | 
+#   bun-types.js      | 100.00 |   100.00 |  100.00 | 
+#   bun.cjs           |  21.15 |   100.00 |    0.00 | 10-50
+#   bun.js            |  41.67 |    33.33 |   33.33 | 10 17-41 45-46
+#   framing.cjs       |  21.62 |   100.00 |    0.00 | 9-37
+#   framing.js        | 100.00 |    84.00 |  100.00 | 
+#   node.cjs          |   7.81 |   100.00 |    0.00 | 11-21 23-159 162-190
+#   node.js           |  97.87 |    86.55 |   90.00 | 31-34
+#   types.cjs         |  23.53 |   100.00 |    0.00 | 5-17
+#   types.js          | 100.00 |    80.00 |  100.00 | 
+#  server.cjs         |  20.95 |    19.05 |   24.00 | 41-44 49 100-109 120-123 125-127 129-145 147-154 157-183 185-191 193-219 221-237 239-265 267-275 277-564
+#  server.js          |  97.17 |    87.88 |   96.23 | 46 211-212 297-298 332-335 445-446 557-561
+#  static             |        |          |         | 
+#   body.cjs          |   7.14 |   100.00 |    0.00 | 5-56
+#   body.js           |   3.77 |   100.00 |    0.00 | 3-53
+#   cache.cjs         |  21.31 |   100.00 |    0.00 | 8-10 15-37 39-46 48-61
+#   cache.js          | 100.00 |    93.22 |  100.00 | 
+#   index.cjs         |   7.89 |    50.00 |    0.00 | 9-113
+#   index.js          | 100.00 |   100.00 |  100.00 | 
+#   mime.cjs          |  94.74 |   100.00 |    0.00 | 19
+#   mime.js           | 100.00 |   100.00 |  100.00 | 
+#   plan.cjs          |  44.44 |   100.00 |    0.00 | 5-9
+#   plan.js           |  33.33 |   100.00 |    0.00 | 3-6
+#   range.cjs         |  14.81 |   100.00 |    0.00 | 5-27
+#   range.js          | 100.00 |   100.00 |  100.00 | 
+#   resolve.cjs       |  26.56 |   100.00 |    0.00 | 16-22 24-43 45-64
+#   resolve.js        | 100.00 |    82.86 |  100.00 | 
+#   serve.cjs         |  14.47 |   100.00 |   28.57 | 29-69 71-109 111-122 124-226
+#   serve.js          |  98.66 |    92.90 |   91.67 | 203-205
+# scripts             |        |          |         | 
+#  asset-manifest.ts  | 100.00 |    50.00 |  100.00 | 
+# src                 |        |          |         | 
+#  static             |        |          |         | 
+#   cache.ts          |  62.75 |    55.56 |   66.67 | 5-6 24-27 34 40-51
+#   range.ts          | 100.00 |    88.00 |  100.00 | 
+#   resolve.ts        |  59.09 |    88.24 |   40.00 | 10-11 13-15 32-44
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------
+# all files           |  55.81 |    85.90 |   68.52 | 
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------
+# end of coverage report
+(node:1850) ExperimentalWarning: glob is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+TOTAL 55.81%
+(node:1839) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

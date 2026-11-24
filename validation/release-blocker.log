@@ -1,0 +1,2 @@
+Missing bun.lock; run make setup and commit the generated lockfile
+make: *** [Makefile:37: lock-check] Error 1

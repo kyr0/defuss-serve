@@ -1,0 +1,75 @@
+{
+  "name": "defuss-serve",
+  "version": "0.3.0",
+  "description": "Native Bun and Node HTTP hosting for static files and listener-independent defuss protocol endpoints.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Aron Homberg",
+  "packageManager": "bun@1.4.5",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./plugins": {
+      "import": {
+        "types": "./dist/plugins.d.mts",
+        "default": "./dist/plugins.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins.d.cts",
+        "default": "./dist/plugins.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "ARCH.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "pkgroll --clean-dist",
+    "lint": "oxlint --deny-warnings src tests scripts examples",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test --test-timeout=30000 tests/*.test.ts",
+    "test:bun": "bun test --timeout 15000 tests/*.test.ts",
+    "coverage": "node --experimental-strip-types scripts/coverage.ts",
+    "e2e": "node --experimental-strip-types scripts/e2e.ts",
+    "bench": "node --experimental-strip-types scripts/bench.ts",
+    "prepublishOnly": "make release-verify",
+    "bench:bun": "bun scripts/bench.ts",
+    "asset-manifest": "node --experimental-strip-types scripts/asset-manifest.ts",
+    "bench:frameworks": "BENCH_MODES=native,express,fastify,hono,immutable node --experimental-strip-types scripts/bench.ts"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.0",
+    "typescript": "5.9.3",
+    "pkgroll": "2.29.0",
+    "oxlint": "1.90.0",
+    "playwright": "1.64.1",
+    "express": "5.1.0",
+    "fastify": "5.4.0",
+    "hono": "4.8.3",
+    "@hono/node-server": "1.14.4"
+  },
+  "homepage": "https://github.com/kyr0/defuss-serve#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kyr0/defuss-serve.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

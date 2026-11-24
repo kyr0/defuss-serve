@@ -1,0 +1,30 @@
+name: Release verification
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+jobs:
+  release-verify:
+    runs-on: ubuntu-latest
+    env:
+      DEFUSS_RPC_PACKAGE: ${{ vars.DEFUSS_RPC_PACKAGE }}
+      DEFUSS_MCP_PACKAGE: ${{ vars.DEFUSS_MCP_PACKAGE }}
+      DEFUSS_O11Y_PACKAGE: ${{ vars.DEFUSS_O11Y_PACKAGE }}
+      DEFUSS_O11Y_FIXTURE: ${{ vars.DEFUSS_O11Y_FIXTURE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.10.0'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.5'
+      - run: make setup
+      - run: bunx playwright install --with-deps chromium webkit
+      - run: make release-verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-e2e
+          path: output/e2e/
+          if-no-files-found: ignore

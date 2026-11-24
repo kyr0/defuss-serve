@@ -1,0 +1,6 @@
+Consumer declaration checks: ESM + CommonJS PASS
+Packed consumer PASS: node, ESM and CommonJS, HTTP static/range, protocol adapters, live registration, independent listeners
+Bun: NOT RUN (runtime unavailable)
+Browser engines: NOT RUN (REQUIRE_BROWSERS=1 enables Chromium and WebKit)
+Actual upstream RPC/MCP: NOT RUN (supply package versions or absolute tarball paths)
+Actual O11y: NOT RUN (upstream package and fixture required)

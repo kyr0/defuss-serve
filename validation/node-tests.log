@@ -1,0 +1,233 @@
+TAP version 13
+# (node:2276) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: immutable manifest: misses, conditional requests, immutable cache contract, aliases, deployment mutation
+ok 1 - immutable manifest: misses, conditional requests, immutable cache contract, aliases, deployment mutation
+  ---
+  duration_ms: 91.410713
+  type: 'test'
+  ...
+# Subtest: live bounded negative cache expiry and static-shadow policy on startup and registration
+ok 2 - live bounded negative cache expiry and static-shadow policy on startup and registration
+  ---
+  duration_ms: 148.926556
+  type: 'test'
+  ...
+# Subtest: uncooperative handler stays quarantined after drain deadline; no premature close or replacement
+ok 3 - uncooperative handler stays quarantined after drain deadline; no premature close or replacement
+  ---
+  duration_ms: 42.396728
+  type: 'test'
+  ...
+# Subtest: slow cleanup is bounded by one stop deadline; late rejections diagnosed
+ok 4 - slow cleanup is bounded by one stop deadline; late rejections diagnosed
+  ---
+  duration_ms: 32.807205
+  type: 'test'
+  ...
+# Subtest: cancel hook completion is part of drain; resource cleanup never races cancellation
+ok 5 - cancel hook completion is part of drain; resource cleanup never races cancellation
+  ---
+  duration_ms: 40.712093
+  type: 'test'
+  ...
+# Subtest: admission limits reject before side effects and lifecycle bytes count source production
+ok 6 - admission limits reject before side effects and lifecycle bytes count source production
+  ---
+  duration_ms: 7.189415
+  type: 'test'
+  ...
+# Subtest: per-plugin body limits, absolute body-read deadline, host and forwarding trust
+ok 7 - per-plugin body limits, absolute body-read deadline, host and forwarding trust
+  ---
+  duration_ms: 57.158269
+  type: 'test'
+  ...
+# Subtest: compiled dispatch supports method overlap, prefix boundaries, and dynamic fallback collision
+ok 8 - compiled dispatch supports method overlap, prefix boundaries, and dynamic fallback collision
+  ---
+  duration_ms: 11.825179
+  type: 'test'
+  ...
+# Subtest: startup deadline quarantines pending initialization until it settles
+ok 9 - startup deadline quarantines pending initialization until it settles
+  ---
+  duration_ms: 55.988421
+  type: 'test'
+  ...
+# Subtest: slow static consumer does not eagerly produce a complete large file and cancellation releases budget
+ok 10 - slow static consumer does not eagerly produce a complete large file and cancellation releases budget
+  ---
+  duration_ms: 104.845395
+  type: 'test'
+  ...
+# Subtest: repeated atomic plugin changes, stable error telemetry and no leaked leases
+ok 11 - repeated atomic plugin changes, stable error telemetry and no leaked leases
+  ---
+  duration_ms: 19.379864
+  type: 'test'
+  ...
+# (node:2277) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: invalid response headers and forbidden framing cancel the body and release every lease
+ok 12 - invalid response headers and forbidden framing cancel the body and release every lease
+  ---
+  duration_ms: 48.213094
+  type: 'test'
+  ...
+# Subtest: raw HTTP framing: no overflow bytes, no reused connection after short body, exact framing survives keep-alive
+ok 13 - raw HTTP framing: no overflow bytes, no reused connection after short body, exact framing survives keep-alive
+  ---
+  duration_ms: 73.55086
+  type: 'test'
+  ...
+# Subtest: exclusive endpoint ownership across wrappers, servers and CJS/ESM
+ok 14 - exclusive endpoint ownership across wrappers, servers and CJS/ESM
+  ---
+  duration_ms: 28.314333
+  type: 'test'
+  ...
+# Subtest: matcher-only static shadow policy checks manifest and real request predicates
+ok 15 - matcher-only static shadow policy checks manifest and real request predicates
+  ---
+  duration_ms: 23.688733
+  type: 'test'
+  ...
+# Subtest: build-time SHA-256 manifests yield representation-specific strong validators and If-Range
+ok 16 - build-time SHA-256 manifests yield representation-specific strong validators and If-Range
+  ---
+  duration_ms: 194.274705
+  type: 'test'
+  ...
+# Subtest: independent handler and plugin budgets and execution deadline retain uncooperative work
+ok 17 - independent handler and plugin budgets and execution deadline retain uncooperative work
+  ---
+  duration_ms: 65.755839
+  type: 'test'
+  ...
+# Subtest: actual stream and descriptor budgets do not block bodyless health checks
+ok 18 - actual stream and descriptor budgets do not block bodyless health checks
+  ---
+  duration_ms: 29.050492
+  type: 'test'
+  ...
+# Subtest: body-bearing upload admission is independent of bodyless calls
+ok 19 - body-bearing upload admission is independent of bodyless calls
+  ---
+  duration_ms: 14.303197
+  type: 'test'
+  ...
+# Subtest: deterministic generated range, path and validator invariants
+ok 20 - deterministic generated range, path and validator invariants
+  ---
+  duration_ms: 116.654189
+  type: 'test'
+  ...
+# {"endurance":{"requests":732,"fdsBefore":57,"fdsAfter":57,"memoryBefore":{"heap":23597440,"rss":102301696},"memoryAfter":{"heap":45346424,"rss":141623296}}}
+# Subtest: resource endurance: repeated file reads, disconnects, plugin replacements, bounded counters and descriptors
+ok 21 - resource endurance: repeated file reads, disconnects, plugin replacements, bounded counters and descriptors
+  ---
+  duration_ms: 960.551608
+  type: 'test'
+  ...
+# Subtest: Node connection admission rejects excess sockets and releases capacity on close
+ok 22 - Node connection admission rejects excess sockets and releases capacity on close
+  ---
+  duration_ms: 54.484851
+  type: 'test'
+  ...
+# Subtest: native Bun file path returns the same range and conditional bytes when opted in
+ok 23 - native Bun file path returns the same range and conditional bytes when opted in # SKIP
+  ---
+  duration_ms: 0.07409
+  type: 'test'
+  ...
+# (node:2278) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: static content, directory redirects, MIME, HEAD, hidden and escaping files, live updates
+ok 24 - static content, directory redirects, MIME, HEAD, hidden and escaping files, live updates
+  ---
+  duration_ms: 161.331873
+  type: 'test'
+  ...
+# Subtest: single, open, suffix, clipped, empty and unsatisfiable byte ranges; malformed and multi-range ignored
+ok 25 - single, open, suffix, clipped, empty and unsatisfiable byte ranges; malformed and multi-range ignored
+  ---
+  duration_ms: 73.98636
+  type: 'test'
+  ...
+# Subtest: conditional requests and representation-specific caching
+ok 26 - conditional requests and representation-specific caching
+  ---
+  duration_ms: 65.991717
+  type: 'test'
+  ...
+# Subtest: static-first dispatch, real HTTP Fetch endpoints, SPA last, method ownership and diagnostics
+ok 27 - static-first dispatch, real HTTP Fetch endpoints, SPA last, method ownership and diagnostics
+  ---
+  duration_ms: 40.09765
+  type: 'test'
+  ...
+# Subtest: live plugin registration, collision validation, rollback, shutdown and independent listeners
+ok 28 - live plugin registration, collision validation, rollback, shutdown and independent listeners
+  ---
+  duration_ms: 13.870206
+  type: 'test'
+  ...
+# Subtest: streaming responses drain on removal and cancel on timeout or client disconnect
+ok 29 - streaming responses drain on removal and cancel on timeout or client disconnect
+  ---
+  duration_ms: 546.312188
+  type: 'test'
+  ...
+# Subtest: CORS, cookies, streamed body bounds, opaque errors and observer isolation
+ok 30 - CORS, cookies, streamed body bounds, opaque errors and observer isolation
+  ---
+  duration_ms: 56.119391
+  type: 'test'
+  ...
+# Subtest: invalid configuration, route declarations, startup and close failures
+ok 31 - invalid configuration, route declarations, startup and close failures
+  ---
+  duration_ms: 27.989512
+  type: 'test'
+  ...
+# Subtest: undeclared runtime collisions fail closed; malformed targets are rejected on Node
+ok 32 - undeclared runtime collisions fail closed; malformed targets are rejected on Node
+  ---
+  duration_ms: 8.918369
+  type: 'test'
+  ...
+# Subtest: legacy RPC call guard, compressed size limits and untouched upload bytes
+ok 33 - legacy RPC call guard, compressed size limits and untouched upload bytes
+  ---
+  duration_ms: 31.527791
+  type: 'test'
+  ...
+# Subtest: large sparse media supports precise bounded seeking without whole-file reads
+ok 34 - large sparse media supports precise bounded seeking without whole-file reads
+  ---
+  duration_ms: 12.031344
+  type: 'test'
+  ...
+# Subtest: listener shutdown forces an open response to cancel after its grace period
+ok 35 - listener shutdown forces an open response to cancel after its grace period
+  ---
+  duration_ms: 34.55364
+  type: 'test'
+  ...
+# Subtest: TLS listener serves an actual certificate-validated HTTPS request
+ok 36 - TLS listener serves an actual certificate-validated HTTPS request
+  ---
+  duration_ms: 214.790951
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1849.961147

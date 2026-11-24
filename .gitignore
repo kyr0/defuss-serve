@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+output/
+tmp/
+var/
+.env
+.env.*
+!.env.example
+*.log
+*.tgz
+.DS_Store
+__pycache__/
+var/*
+tmp/*
+output/*
+input/*
+.vae/SWARM_STATUS.yaml
+.cache/
+# Offline v0.3.0 evidence cited by docs/VERIFICATION.md and .vae/MEMORY.md
+!validation/*.log

@@ -1,0 +1,47 @@
+name: Verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['22.19.0', '24.10.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.5'
+      - run: make setup
+      - run: bunx playwright install --with-deps chromium webkit
+      - run: make verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-node-${{ matrix.node }}
+          path: output/e2e/
+          if-no-files-found: ignore
+  cross-platform:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.10.0'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.5'
+      - run: bun install
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run test:bun
