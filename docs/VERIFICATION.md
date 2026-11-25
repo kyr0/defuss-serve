@@ -8,22 +8,22 @@ Install the toolchain from `mise.toml` and OpenSSL for the certificate-validated
 
 For the upstream VAE program, run `make vae-init` and `make vae-gate` with `VAE_HOME=/path/to/defuss-vae` (a checkout) or `VAE=/path/to/plugin/scripts/vae.py` (an installed agent plugin). Complete its actual review and docs stages; do not create synthetic attestations.
 
-Actual RPC and MCP package-consumer integration is optional during local transport development but required for claiming upstream interoperability. Use absolute paths to the upstream tarballs with `DEFUSS_RPC_PACKAGE` and `DEFUSS_MCP_PACKAGE`, as described in the README. The upstream MCP 0.6.0 package requires at least Node 22.19.0; npm warns about the engine when installing it on the pinned 22.16.0, and the tests still pass. defuss-o11y is not published on npm. `make release-verify` also requires `DEFUSS_O11Y_PACKAGE`, a published package spec or an absolute tarball path; `tests/o11y-fixture.ts` mounts it unless `DEFUSS_O11Y_FIXTURE` names another fixture. The release workflow defaults the three packages to defuss-rpc 4.0.0, defuss-mcp 0.6.0 and defuss-o11y 0.3.0, so it fails until defuss-o11y is published.
+Actual RPC and MCP package-consumer integration is optional during local transport development but required for claiming upstream interoperability. `make release-verify` installs the published defuss-rpc 4.1.0, defuss-mcp 0.6.2 and defuss-o11y 0.3.0. `DEFUSS_RPC_PACKAGE`, `DEFUSS_MCP_PACKAGE` and `DEFUSS_O11Y_PACKAGE` replace each one with another package spec or an absolute tarball path; an empty value keeps the default, so the release workflow passes its repository variables through unchanged. The Makefile holds the defaults, so a local run and CI test the same releases. defuss-mcp 0.6.2 requires at least Node 22.19.0; npm warns about the engine when installing it on the pinned 22.16.0, and the tests still pass. `tests/o11y-fixture.ts` mounts the O11y package unless `DEFUSS_O11Y_FIXTURE` names another fixture.
 
 The built-in Node coverage gate measures the executed ESM build once. Node cannot execute Bun-specific native branches. Unit/integration coverage is not evidence of protocol compatibility or performance on another runtime.
 
-## Local results, 2026-11-24
+## Local results, 2026-11-25
 
 Environment: macOS arm64, Node 22.16.0 and Bun 1.4.5 from `mise.toml`, pkgroll 2.29.0, oxlint 1.90.0, TypeScript 5.9.3, Playwright 1.64.1. Commands: `mise exec -- make verify` and `mise exec -- make release-verify`, both exit 0.
 
 - pkgroll ESM/CommonJS build, repository policy, oxlint with `--deny-warnings` and strict typecheck: passed.
-- Node HTTP tests: 39 tests, 38 passed, 0 failed, 1 skipped. The skipped test is the native Bun file path, which only Bun can execute.
-- Bun HTTP tests: 39 tests across 3 files, 39 passed, 0 failed.
-- ESM production-artifact coverage: 89.31% lines, 90.10% branches, 92.00% functions, above the 85/75/80 thresholds.
+- Node HTTP tests: 53 tests, 51 passed, 0 failed, 2 skipped. The skipped tests use the native Bun file path, which only Bun can execute.
+- Bun HTTP tests: 53 tests across 5 files, 53 passed, 0 failed.
+- ESM production-artifact coverage: 89.78% lines, 89.93% branches, 90.84% functions, above the 85/75/80 thresholds.
 - Packed consumer on Node and Bun: ESM and CommonJS declarations and HTTP checks passed.
-- Browser media seeking: Chromium and WebKit, each against Node and Bun listeners, passed with 206 range responses.
-- Actual upstream RPC and MCP on Node and Bun: passed with the published defuss-rpc 4.0.0, defuss-mcp 0.6.0 and `@modelcontextprotocol/client` 2.4.0 from npm. The RPC client called a method and read a stream; the MCP SDK client called a tool.
-- Actual upstream O11y on Node and Bun: passed with defuss-o11y 0.3.0 packed from a local build, because it is not published. `tests/o11y-fixture.ts` follows defuss-o11y's own `examples/serve/verify.mjs`: health, readiness, liveness and metrics payloads, 405 for POST, and readiness turning 503 after drain.
+- Browser media seeking: Chromium and WebKit, each against Node and Bun listeners, passed with 206 range responses. The same engines passed the cross-origin isolation and WebSocket page.
+- Actual upstream RPC and MCP on Node and Bun: passed with the published defuss-rpc 4.1.0, defuss-mcp 0.6.2 and `@modelcontextprotocol/client` 2.4.0 from npm, with no package variable set. The RPC client called a method and read a stream; the MCP SDK client called a tool.
+- Actual upstream O11y on Node and Bun: passed with the published defuss-o11y 0.3.0. `tests/o11y-fixture.ts` follows defuss-o11y's own `examples/serve/verify.mjs`: health, readiness, liveness and metrics payloads, 405 for POST, and readiness turning 503 after drain.
 - `make lock-check`: passed against the tracked `bun.lock` with a frozen install.
 - Benchmarks: `make bench` and `make bench-frameworks` ran on this machine. [Benchmark evidence](BENCHMARKS.md) has the results and an A/B of the Node request-path change.
 

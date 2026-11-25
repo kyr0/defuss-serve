@@ -214,7 +214,7 @@ make bench
 make bench-frameworks
 ```
 
-The development gate runs lint, typecheck, Node and Bun HTTP tests, coverage, packed-consumer E2E and Chromium/WebKit media seeking. The release gate additionally requires a tracked Bun lockfile and a frozen install, and the actual RPC, MCP and O11y packages. `tests/o11y-fixture.ts` mounts the O11y package; `DEFUSS_O11Y_FIXTURE` can replace it for another defuss-o11y version. See [verification](docs/VERIFICATION.md). Publishing invokes `make release-verify`, which fails closed if prerequisites are unavailable. Do not interpret an offline fallback build or source tests as a complete release attestation.
+The development gate runs lint, typecheck, Node and Bun HTTP tests, coverage, packed-consumer E2E and Chromium/WebKit media seeking. The release gate additionally requires a tracked Bun lockfile and a frozen install, and the actual RPC, MCP and O11y packages: the published defuss-rpc 4.1.0, defuss-mcp 0.6.2 and defuss-o11y 0.3.0 unless `DEFUSS_RPC_PACKAGE`, `DEFUSS_MCP_PACKAGE` or `DEFUSS_O11Y_PACKAGE` names another spec or an absolute tarball path. `tests/o11y-fixture.ts` mounts the O11y package; `DEFUSS_O11Y_FIXTURE` can replace it for another defuss-o11y version. See [verification](docs/VERIFICATION.md). Publishing invokes `make release-verify`, which fails closed if prerequisites are unavailable. Do not interpret an offline fallback build or source tests as a complete release attestation.
 
 Run the separate-process benchmark against native transport and an optional previous build:
 

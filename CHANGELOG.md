@@ -2,6 +2,8 @@
 
 ## 0.4.0
 
+- `make release-verify`, and so `bun publish`, defaults to the published defuss-rpc 4.1.0, defuss-mcp 0.6.2 and defuss-o11y 0.3.0; the package variables still override them, and CI uses the same defaults.
+- Node: the WebSocket listener now receives every request with `Connection: upgrade`. One with a Content-Length body, such as the `Upgrade: h2c` POST of `curl --http2`, is still answered on Node 22, 24 and 26; one with a chunked body gets 400.
 - Add WebSockets: a plugin's `fetch` returns `acceptWebSocket(request, { open, message, close, protocol?, headers? })`, and the listener sends 101 and runs the socket. Bun uses its native WebSockets; Node gets an RFC 6455 implementation in the package, so no runtime dependency was added. The host checks the Host before the plugin runs, and the plugin returns its own refusals. A request that is no handshake gets 400, a version other than 13 gets 426. An open socket holds a request, a stream slot and its plugin lease. Removing the plugin or stopping the server closes it with 1001 at once.
 - Add `maxWebSocketMessageBytes` (1 MiB): a larger message closes its socket with 1009.
 - Add `responseHeaders`: fields the host sets on every response it dispatches, replacing a response's own field of that name. This covers static files, plugin responses, refusals, errors and 101 handshakes, for example the two fields of cross-origin isolation. Fields of framing, the representation, cookies and the WebSocket handshake are refused when the server is made.

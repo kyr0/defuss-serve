@@ -48,3 +48,6 @@
 2026-11-25T00:05:47Z s=5940460f FAIL tests.unit,coverage
 2026-11-25T00:09:03Z s=5940460f DONE fp=5c5ebad7c267 cov=89.8% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+19)
 2026-11-25T00:09:03Z s=5940460f FINDING src/runtime/node.ts:upgrade learn=test: tests/websocket.test.ts sends an h2c POST whose body ends 50 ms after the head; it passes on Node 22.16, 24.22, 26.13 and Bun 1.4.5, and my first fix (socket on
+2026-11-25T00:15:19Z s=5940460f DONE fp=fb535e98ffc0 cov=89.8% paths=.github/workflows/release-verify.yml,CHANGELOG.md,Makefile,README.md(+1)
+2026-11-25T00:15:19Z s=5940460f FINDING Makefile:release-verify learn=verifier: make release-verify itself now resolves the packages, so the publish hook and CI run the same check; e2e.ts still fails closed if a resolved value is missing.
+2026-11-25T00:15:19Z s=5940460f FINDING Makefile:UPSTREAM learn=none: a defect of this change before commit, fixed in place; make -n is the check, and no shipped behaviour regressed.

@@ -46,8 +46,11 @@ lock-check: ## require the exact Bun lockfile to be tracked and installable
 	@git ls-files --error-unmatch bun.lock >/dev/null
 	bun install --frozen-lockfile
 
+# The release gate's upstream packages: the published releases unless a variable names another spec or an absolute
+# tarball path. $(or) also replaces an empty value, which an unset CI variable gives.
+UPSTREAM = DEFUSS_RPC_PACKAGE='$(or $(DEFUSS_RPC_PACKAGE),defuss-rpc@4.1.0)' DEFUSS_MCP_PACKAGE='$(or $(DEFUSS_MCP_PACKAGE),defuss-mcp@0.6.2)' DEFUSS_O11Y_PACKAGE='$(or $(DEFUSS_O11Y_PACKAGE),defuss-o11y@0.3.0)'
 release-verify: lock-check ## mandatory actual upstream protocol and browser interoperability gate
-	REQUIRE_UPSTREAM=1 $(MAKE) verify
+	REQUIRE_UPSTREAM=1 $(UPSTREAM) $(MAKE) verify
 
 bench: build ## process-isolated transport benchmarks on Node and Bun
 	bun run bench
