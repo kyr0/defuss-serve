@@ -1,6 +1,6 @@
 {
   "name": "defuss-serve",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Native Bun and Node HTTP hosting for static files and listener-independent defuss protocol endpoints.",
   "type": "module",
   "license": "MIT",

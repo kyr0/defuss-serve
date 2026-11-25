@@ -10,7 +10,7 @@ import { gzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createRequire } from 'node:module';
-import { createServer, type ServeOptions, type ServePlugin, type ServeServer } from 'defuss-serve';
+import { createServer, type RequestEvent, type ServeOptions, type ServePlugin, type ServeServer } from 'defuss-serve';
 import { endpointPlugin } from 'defuss-serve/plugins';
 import { parseRange } from '../src/static/range.ts';
 import { safeSegments } from '../src/static/resolve.ts';
@@ -122,6 +122,42 @@ test('client disconnect aborts a running handler signal and releases its lease',
   const controller=new AbortController();const pending=call(s,'/wait',{signal:controller.signal}).catch(()=>{});
   await entered.promise;controller.abort();await pending;
   await until(()=>reason!==undefined&&drained(s));assert.ok(reason instanceof Error);
+});
+
+test('a request without a usable Host gets 400 on both runtimes, never 500', async t=>{
+  // VERIFIED: (Bun 1.4.3 and 1.4.5 probes) Bun hands fetch() the raw target as request.url when the Host is missing, empty
+  // or malformed, which no URL parses; 0.4.0 answered 500 there. Node's adapter refuses such a request itself.
+  const diagnostics: string[]=[];
+  const s=await server(t,{plugins:[route('relay-probe',()=>new Response('ok'))],onDiagnostic:e=>diagnostics.push(e.code)});
+  for (const host of ['','Host: \r\n','Host: a b\r\n']) assert.match(await raw(s,`GET /relay-probe HTTP/1.0\r\n${host}\r\n`),/^HTTP\/1\.1 400 /,JSON.stringify(host));
+  // A WebSocket handshake without a Host takes Node's upgrade path.
+  assert.match(await raw(s,'GET /relay-probe HTTP/1.0\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n'),/^HTTP\/1\.1 400 /);
+  assert.match(await raw(s,'GET /relay-probe HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n'),/^HTTP\/1\.1 200 /);
+  assert.deepEqual(diagnostics,[]); assert.equal(s.stats.rejected,4); await until(()=>drained(s));
+});
+
+test('onRequest reports the path of every request and whether the host refused it before any handler', async t=>{
+  const events: RequestEvent[]=[];
+  const s=await server(t,{plugins:[{...route('relay-probe',()=>new Response('ok'),'/relay-probe',['GET','POST']),maxBodyBytes:4}],onRequest:e=>events.push(e)});
+  const seen=()=>events.splice(0).map(({durationMs,...rest})=>{ assert.ok(durationMs>=0); return rest; });
+  const host=`Host: 127.0.0.1:${s.port}\r\nConnection: close\r\n`;
+  assert.match(await raw(s,`GET /relay-probe?x=1 HTTP/1.1\r\n${host}\r\n`),/^HTTP\/1\.1 200 /);
+  assert.deepEqual(seen(),[{method:'GET',handler:'relay-probe',status:200,path:'/relay-probe?x=1',rejected:false}]);
+  assert.match(await raw(s,`GET /missing HTTP/1.1\r\n${host}\r\n`),/^HTTP\/1\.1 404 /);
+  assert.deepEqual(seen(),[{method:'GET',handler:'http',status:404,path:'/missing',rejected:false}]);
+  assert.match(await raw(s,'GET /relay-probe HTTP/1.0\r\n\r\n'),/^HTTP\/1\.1 400 /);
+  assert.deepEqual(seen(),[{method:'GET',handler:'http',status:400,path:'/relay-probe',rejected:true}]);
+  assert.match(await raw(s,'POST /relay-probe?a=b HTTP/1.1\r\nHost: rebound.example\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'),/^HTTP\/1\.1 403 /);
+  assert.deepEqual(seen(),[{method:'POST',handler:'http',status:403,path:'/relay-probe?a=b',rejected:true}]);
+  assert.match(await raw(s,`POST /relay-probe HTTP/1.1\r\n${host}Content-Length: 5\r\n\r\n12345`),/^HTTP\/1\.1 413 /);
+  assert.deepEqual(seen(),[{method:'POST',handler:'relay-probe',status:413,path:'/relay-probe',rejected:true}]);
+  assert.match(await raw(s,`GET /a%2Fb HTTP/1.1\r\n${host}\r\n`),/^HTTP\/1\.1 400 /);
+  assert.deepEqual(seen(),[{method:'GET',handler:'http',status:400,path:'/a%2Fb',rejected:true}]);
+  if (s.runtime==='node') {
+    // Node's adapter refuses an absolute-form target before dispatch and reports the raw target.
+    assert.match(await raw(s,`GET http://example.org/x HTTP/1.1\r\n${host}\r\n`),/^HTTP\/1\.1 400 /);
+    assert.deepEqual(seen(),[{method:'GET',handler:'http',status:400,path:'http://example.org/x',rejected:true}]);
+  }
 });
 
 test('actual stream and descriptor budgets do not block bodyless health checks', async t=>{

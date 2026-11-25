@@ -33,4 +33,7 @@ export async function within<T>(promise: Promise<T>, timeoutMs: number): Promise
     return await Promise.race([promise.then(() => true), new Promise<boolean>(resolve => { timer = setTimeout(() => resolve(false), timeoutMs); })]);
   } finally { if (timer !== undefined) clearTimeout(timer); }
 }
-export type Listen = (options: ServeOptions, dispatch: Dispatch) => Promise<Listener>;
+/** The listener answered 400 before dispatch, with no Request to give it (Node: a target or Host no URL can be built
+ * from, a method Fetch forbids, an upgrade request with a body it cannot carry): count and report it. `target` is the raw request target. */
+export type Refuse = (method: string, target: string) => void;
+export type Listen = (options: ServeOptions, dispatch: Dispatch, refuse: Refuse) => Promise<Listener>;

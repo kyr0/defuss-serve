@@ -14,7 +14,7 @@ import { fieldList, withFields } from './policy.js';
 import type { FieldList } from './policy.js';
 import { acceptanceOf } from './websocket/accept.js';
 import type { Acceptance } from './websocket/accept.js';
-import type { Diagnostic, LifecycleEvent, ServeOptions, ServePlugin, ServeServer, ServeStats, ServerState } from './types.js';
+import type { Diagnostic, LifecycleEvent, RequestEvent, ServeOptions, ServePlugin, ServeServer, ServeStats, ServerState } from './types.js';
 
 const GiB = 1024 ** 3;
 const noop = () => {};
@@ -111,6 +111,11 @@ class Server implements ServeServer {
     const next = this.queue.then(operation); this.queue = next.catch(noop); return next;
   }
   private diagnostic(event: Diagnostic): void { try { this.options.onDiagnostic?.(event); } catch { /* observers cannot break requests */ } }
+  private requested(event: RequestEvent): void { try { this.options.onRequest?.(event); } catch { /* isolated observer */ } }
+  /** The listener's own 400 for a request it could not hand to dispatch: counted and reported like dispatch's refusals. */
+  private refuse = (method: string, target: string): void => {
+    this.rejected++; this.requested({ method, path: target, handler: 'http', status: 400, rejected: true, durationMs: 0 });
+  };
   private checkShadows(routes: Routes): void {
     if (this.options.staticShadow === 'allow') return;
     const origin = `${this.options.tls ? 'https' : 'http'}://localhost`;
@@ -165,7 +170,7 @@ class Server implements ServeServer {
         await this.staticStore.init(); this.checkShadows(this.routes);
         for (const e of this.entries) await this.startEntry(e);
         this.phase = 'running';
-        this.listener = await (this.runtime === 'bun' ? listenBun : listenNode)(this.options, this.dispatch);
+        this.listener = await (this.runtime === 'bun' ? listenBun : listenNode)(this.options, this.dispatch, this.refuse);
         return this;
       } catch (error) {
         this.phase = 'stopped';
@@ -215,7 +220,7 @@ class Server implements ServeServer {
     let handler = 'http', route = 'unmatched';
     let status: number | undefined;
     let lease: Lease | undefined, bounded: BoundedBody | undefined;
-    let stream = false, admitted = false, finished = false, failed = false, upload = false;
+    let stream = false, admitted = false, finished = false, failed = false, upload = false, refused = false;
     let executionExpired = false;
     let plan: StaticFilePlan | undefined;
     let upgrade: Acceptance | undefined;
@@ -231,6 +236,13 @@ class Server implements ServeServer {
       emit(phase === 'complete' && failed ? 'error' : phase, bytes);
     };
     const reject = (code: number, message: string) => { this.rejected++; return new Response(message, { status: code }); };
+    // A refusal before any plugin or static file answered: onRequest reports it as rejected.
+    const deny = (code: number, message: string) => { refused = true; return reject(code, message); };
+    // VERIFIED: (Bun 1.4.3 and 1.4.5 probes) without a usable Host, Bun's request.url is the raw target, which no URL parses.
+    const url = parsed ?? URL.parse(incoming.url) ?? undefined;
+    const report = (code: number) => {
+      if (this.options.onRequest) this.requested({ method: incoming.method, path: url ? url.pathname + url.search : incoming.url, handler, status: code, rejected: refused, durationMs: performance.now() - started });
+    };
     let response: Response;
     const cancel = async (r: Response, reason?: unknown) => {
       if (plan) { const file = plan; plan = undefined; await file.close(); }
@@ -241,21 +253,20 @@ class Server implements ServeServer {
       plan = file; return file.response;
     };
     try {
-      const url = parsed ?? new URL(incoming.url);
-      const path = url.pathname.replace(/\/+$/, '') || '/';
       const host = incoming.headers.get('host');
-      const authority = host && !/[\s/\\@?#%,]/.test(host) ? host.toLowerCase() === url.host ? url : (() => { try { return new URL(`${url.protocol}//${host}`); } catch { return undefined; } })() : undefined;
-      if (this.phase !== 'running') response = reject(503, 'Service Unavailable');
-      else if (!authority) response = reject(400, 'Bad Request');
-      else if (!this.hosts.has('*') && !this.hosts.has(authority.hostname.toLowerCase())) response = reject(403, 'Forbidden Host');
-      else if (authority.host !== url.host) response = reject(400, 'Bad Request');
-      else if ((this.requestLimit && this.activeRequests >= this.requestLimit)) response = reject(503, 'Server Busy');
+      const authority = url && host && !/[\s/\\@?#%,]/.test(host) ? host.toLowerCase() === url.host ? url : (() => { try { return new URL(`${url.protocol}//${host}`); } catch { return undefined; } })() : undefined;
+      if (this.phase !== 'running') response = deny(503, 'Service Unavailable');
+      else if (!url || !authority) response = deny(400, 'Bad Request');
+      else if (!this.hosts.has('*') && !this.hosts.has(authority.hostname.toLowerCase())) response = deny(403, 'Forbidden Host');
+      else if (authority.host !== url.host) response = deny(400, 'Bad Request');
+      else if ((this.requestLimit && this.activeRequests >= this.requestLimit)) response = deny(503, 'Server Busy');
       else {
         admitted = true; this.activeRequests++; emit('start');
+        const path = url.pathname.replace(/\/+$/, '') || '/';
         const request = sanitizeForwarding(incoming, peer, this.options.trustedProxies ?? []);
         const cors = preflight(request, this.options.cors);
         if (cors) response = cors;
-        else if (url.pathname.startsWith('//') || /%2f|%5c|%00|\\/i.test(url.pathname)) response = reject(400, 'Bad Request');
+        else if (url.pathname.startsWith('//') || /%2f|%5c|%00|\\/i.test(url.pathname)) response = deny(400, 'Bad Request');
         else {
           const file = this.options.publicDir ? await this.staticStore.fetch(request, url) : undefined;
           // Read the snapshot AFTER any asynchronous filesystem lookup.
@@ -264,9 +275,9 @@ class Server implements ServeServer {
             handler = 'static'; route = 'static'; response = selectFile(file);
             if (this.options.staticShadow !== 'allow') for (const e of snapshot.shadows(request, candidates)) {
               this.diagnostic({ code: 'static-shadow', plugin: e.name });
-              if (this.options.staticShadow === 'error') { await cancel(response); response = reject(503, 'Static/API collision'); break; }
+              if (this.options.staticShadow === 'error') { await cancel(response); response = deny(503, 'Static/API collision'); break; }
             }
-          } else if (this.phase !== 'running') response = reject(503, 'Service Unavailable');
+          } else if (this.phase !== 'running') response = deny(503, 'Service Unavailable');
           else {
             const matched = snapshot.match(request, candidates);
             if (matched.collision) { failed = true; this.diagnostic({ code: 'plugin-collision' }); response = new Response('Internal Server Error', { status: 500 }); }
@@ -275,7 +286,7 @@ class Server implements ServeServer {
               if ((this.handlerLimit && this.activeHandlers >= this.handlerLimit) ||
                   (e.plugin.maxConcurrentRequests && e.active.size >= e.plugin.maxConcurrentRequests) ||
                   (request.body && this.uploadLimit && this.activeUploads >= this.uploadLimit)) {
-                response = reject(503, 'Plugin Busy');
+                response = deny(503, 'Plugin Busy');
               } else {
               if (request.body) { upload = true; this.activeUploads++; }
               lease = acquire(e, client, scope);
@@ -285,7 +296,7 @@ class Server implements ServeServer {
               const bodyTimeout = Math.min(globalTimeout || Infinity, localTimeout || Infinity);
               const scoped = scope ? request : new Request(request, { signal: lease.signal });
               const result = boundBody(scoped, limit, Number.isFinite(bodyTimeout) ? bodyTimeout : 0);
-              if (result instanceof Response) response = result;
+              if (result instanceof Response) { refused = true; response = result; }
               else {
                 bounded = result;
                 if (lease.signal.aborted) throw lease.signal.reason;
@@ -356,7 +367,7 @@ class Server implements ServeServer {
         if (this.streamLimit && this.activeStreams >= this.streamLimit) { this.rejected++; upgrade = undefined; response = new Response(null, { status: 503 }); }
         else {
           stream = true; this.activeStreams++; status = 101;
-          try { this.options.onRequest?.({ method: incoming.method, handler, status, durationMs: performance.now() - started }); } catch { /* isolated observer */ }
+          report(status);
           emit('headers');
           const plugin = handler;
           return { response: withFields(response, this.fields), signal, finish, upgrade: { ...upgrade, report: () => this.diagnostic({ code: 'request-error', plugin }) } };
@@ -383,7 +394,7 @@ class Server implements ServeServer {
         } else { stream = true; this.activeStreams++; }
       }
       status = response.status;
-      try { this.options.onRequest?.({ method: incoming.method, handler, status, durationMs: performance.now() - started }); } catch { /* isolated observer */ }
+      report(status);
       emit('headers');
       if (untracked) finish('complete', 0);
       return {response: withFields(response, this.fields), file: plan, signal, length, finish, untracked};

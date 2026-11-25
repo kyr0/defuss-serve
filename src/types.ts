@@ -56,11 +56,19 @@ export interface FetchEndpoint {
   close?(): void | Promise<void>;
 }
 
+/** One per answered request, refused ones included, when its response headers are ready. */
 export interface RequestEvent {
   readonly method: string;
+  /** The target's path and query as parsed (`pathname + search`), or the raw target when it does not parse.
+   * Request data: a query may carry a token, so the host decides what to log. */
+  readonly path: string;
   readonly status: number;
   readonly handler: string;
-  /** Time until response headers, excluding transfer time. */
+  /** True when defuss-serve answered with its own refusal before a plugin or static file could: a target or Host it
+   * cannot use (400), a forbidden Host (403), an encoded slash (400), a stopped or busy server or plugin (503), a
+   * declared body over the limit (413), a static/API collision (503). False for every other answer, 404 and 405 included. */
+  readonly rejected: boolean;
+  /** Time until response headers, excluding transfer time; 0 for a request the listener refuses before dispatch. */
   readonly durationMs: number;
 }
 

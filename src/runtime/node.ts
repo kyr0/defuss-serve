@@ -9,7 +9,7 @@ import { checkChunk, checkEnd } from './framing.js';
 import { fieldList } from '../policy.js';
 import { Session } from '../websocket/session.js';
 import { openNodeWebSocket } from './node-websocket.js';
-import type { Dispatch, DispatchResult, Listen } from './types.js';
+import type { Dispatch, DispatchResult, Listen, Refuse } from './types.js';
 import type { ServeOptions } from '../types.js';
 
 /** Reject absolute-form targets and malformed Host values rather than trusting proxy headers. */
@@ -99,7 +99,7 @@ function plain(res: ServerResponse, status: number, text: string, fields: Record
   res.writeHead(status, { ...fields, Connection: 'close' }).end(text);
 }
 
-async function handle(req: IncomingMessage, res: ServerResponse, dispatch: Dispatch, secure: boolean, fields: Record<string, string>): Promise<void> {
+async function handle(req: IncomingMessage, res: ServerResponse, dispatch: Dispatch, refuse: Refuse, secure: boolean, fields: Record<string, string>): Promise<void> {
   // VERIFIED: (execution-deadline test) the client signal must survive a lease abort so a 504 is still sent; scope is the plugin signal.
   const client = new AbortController(), scope = new AbortController();
   const disconnect = (reason: Error) => { client.abort(reason); scope.abort(reason); };
@@ -112,7 +112,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, dispatch: Dispa
       url = requestUrl(req, secure);
       request = toRequest(req, url, scope);
     } catch {
-      plain(res, 400, 'Bad Request', fields); return;
+      refuse(req.method ?? 'GET', req.url ?? ''); plain(res, 400, 'Bad Request', fields); return;
     }
     const result = await dispatch(request, { peer: req.socket.remoteAddress, client: client.signal, scope, url });
     // Node sends a handshake (Connection: upgrade) to the 'upgrade' listener, so an acceptance here lacks one.
@@ -157,7 +157,7 @@ function upgradeBody(socket: Socket, head: Buffer, length: number): ReadableStre
  * also the `Upgrade: h2c` POST of `curl --http2`, which 0.3.0 answered; so another upgrade's Content-Length body is read
  * where the Node version leaves it. A WebSocket handshake's bytes after the head are frames, so a handshake with a body
  * is 400, as is a chunked body, which Node 22 and 24 no longer decode on this socket. */
-async function upgrade(req: IncomingMessage, socket: Socket, head: Buffer, dispatch: Dispatch, options: ServeOptions, fields: Record<string, string>): Promise<void> {
+async function upgrade(req: IncomingMessage, socket: Socket, head: Buffer, dispatch: Dispatch, refuse: Refuse, options: ServeOptions, fields: Record<string, string>): Promise<void> {
   const client = new AbortController(), scope = new AbortController();
   const disconnect = () => { const reason = new Error('Client disconnected'); client.abort(reason); scope.abort(reason); };
   socket.on('error', () => socket.destroy());
@@ -181,7 +181,7 @@ async function upgrade(req: IncomingMessage, socket: Socket, head: Buffer, dispa
       // the bytes after it, so `req` is then incomplete or holds buffered data, and the default body reads it.
       const parsed = !req.complete || req.readableLength > 0;
       request = toRequest(req, url, scope, bodied && !parsed ? upgradeBody(socket, head, Number(length)) : undefined);
-    } catch { plain(respond(), 400, 'Bad Request', fields); return; }
+    } catch { refuse(req.method ?? 'GET', req.url ?? ''); plain(respond(), 400, 'Bad Request', fields); return; }
     const result = await dispatch(request, { peer: socket.remoteAddress, client: client.signal, scope, url });
     if (result.upgrade) {
       socket.off('close', disconnect);   // the socket's end is now the session's
@@ -200,11 +200,11 @@ async function upgrade(req: IncomingMessage, socket: Socket, head: Buffer, dispa
 }
 
 /** Native Node HTTP/HTTPS listener with backpressure, cancellation and bounded shutdown. */
-export const listenNode: Listen = async (options, dispatch) => {
+export const listenNode: Listen = async (options, dispatch, refuse) => {
   const fields = Object.fromEntries(fieldList(options.responseHeaders, 'responseHeaders'));
-  const handler = (req: IncomingMessage, res: ServerResponse) => { void handle(req, res, dispatch, !!options.tls, fields); };
+  const handler = (req: IncomingMessage, res: ServerResponse) => { void handle(req, res, dispatch, refuse, !!options.tls, fields); };
   const server = options.tls ? createTlsServer(options.tls, handler) : createServer(handler);
-  server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => { void upgrade(req, socket as Socket, head, dispatch, options, fields); });
+  server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => { void upgrade(req, socket as Socket, head, dispatch, refuse, options, fields); });
   const sockets = new Set<Socket>();
   if (options.maxConnections) server.maxConnections = options.maxConnections;
   server.on('connection', socket => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); });

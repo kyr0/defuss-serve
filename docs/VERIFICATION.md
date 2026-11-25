@@ -17,9 +17,9 @@ The built-in Node coverage gate measures the executed ESM build once. Node canno
 Environment: macOS arm64, Node 22.16.0 and Bun 1.4.5 from `mise.toml`, pkgroll 2.29.0, oxlint 1.90.0, TypeScript 5.9.3, Playwright 1.64.1. Commands: `mise exec -- make verify` and `mise exec -- make release-verify`, both exit 0.
 
 - pkgroll ESM/CommonJS build, repository policy, oxlint with `--deny-warnings` and strict typecheck: passed.
-- Node HTTP tests: 53 tests, 51 passed, 0 failed, 2 skipped. The skipped tests use the native Bun file path, which only Bun can execute.
-- Bun HTTP tests: 53 tests across 5 files, 53 passed, 0 failed.
-- ESM production-artifact coverage: 89.78% lines, 89.93% branches, 90.84% functions, above the 85/75/80 thresholds.
+- Node HTTP tests: 55 tests, 53 passed, 0 failed, 2 skipped. The skipped tests use the native Bun file path, which only Bun can execute.
+- Bun HTTP tests: 55 tests across 5 files, 55 passed, 0 failed.
+- ESM production-artifact coverage: 89.98% lines, 89.83% branches, 90.97% functions, above the 85/75/80 thresholds.
 - Packed consumer on Node and Bun: ESM and CommonJS declarations and HTTP checks passed.
 - Browser media seeking: Chromium and WebKit, each against Node and Bun listeners, passed with 206 range responses. The same engines passed the cross-origin isolation and WebSocket page.
 - Actual upstream RPC and MCP on Node and Bun: passed with the published defuss-rpc 4.1.0, defuss-mcp 0.6.2 and `@modelcontextprotocol/client` 2.4.0 from npm, with no package variable set. The RPC client called a method and read a stream; the MCP SDK client called a tool.
@@ -36,6 +36,8 @@ The first runs with the real toolchain found these defects. Each has a fix and a
 - The first `make release-verify` run found that `rpcPlugin` answered `POST /rpc/schema` with 405. The defuss-rpc client fetches its schema with POST, so `getRpcClient` failed. The route accepts POST, and a server test covers it.
 - It also found that MCP through defuss-serve returned 500: defuss-mcp 0.6.0 sends `Connection: keep-alive` on SSE, and response validation rejected every hop-by-hop header. The listener drops hop-by-hop headers, including `Transfer-Encoding: chunked` from `fetch()` proxies, and still rejects other transfer codings; a regression test covers both on Node and Bun.
 - `bun test tests/*.test.ts` treated its arguments as substring filters, so a repository copy under `tmp/` raised the Bun suite to 75 tests. The script passes `./tests/` paths, and `.vae/VERIFY.py` checks it.
+
+A consumer found one more defect in 0.4.0. Bun 1.4.3 and 1.4.5 pass the raw target as `request.url` when the Host is missing, empty or malformed, and dispatch answered such a request with 500. Since 0.4.1 it answers 400; a regression test in `tests/regression.test.ts` covers it on Node and Bun.
 
 Bun 1.4.5 sends any stream body of 256 bytes or more with chunked transfer encoding and drops its declared Content-Length; raw-socket probes confirmed this for default, `direct`, `bytes` and async-iterator streams. Tests accept a missing Content-Length on Bun but never a wrong one, and still check exact bytes.
 

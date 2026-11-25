@@ -51,3 +51,10 @@
 2026-11-25T00:15:19Z s=5940460f DONE fp=fb535e98ffc0 cov=89.8% paths=.github/workflows/release-verify.yml,CHANGELOG.md,Makefile,README.md(+1)
 2026-11-25T00:15:19Z s=5940460f FINDING Makefile:release-verify learn=verifier: make release-verify itself now resolves the packages, so the publish hook and CI run the same check; e2e.ts still fails closed if a resolved value is missing.
 2026-11-25T00:15:19Z s=5940460f FINDING Makefile:UPSTREAM learn=none: a defect of this change before commit, fixed in place; make -n is the check, and no shipped behaviour regressed.
+2026-11-25T06:51:40Z s=2dc3da1e DONE fp=ded7c04c658f cov=90.0% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+9)
+2026-11-25T06:51:40Z s=2dc3da1e FINDING src/server.ts:dispatch (new URL(incoming.url)) learn=test: tests/regression.test.ts 'a request without a usable Host gets 400 on both runtimes, never 500' fails on the HEAD build and passes on Node 22.16, Bun 1.4.5 and 
+2026-11-25T06:51:40Z s=2dc3da1e FINDING src/runtime/node.ts:handle,upgrade (adapter 400) learn=test: tests/regression.test.ts 'onRequest reports the path of every request ...' (Node absolute-form case) and the stats.rejected=4 assertion of the host-less test, w
+2026-11-25T06:51:40Z s=2dc3da1e FINDING ARCH.md:63 P09 learn=none: prose judgement; vae.py prose reported 0 findings, no rule kind detects version narration reliably
+2026-11-25T06:51:40Z s=2dc3da1e FINDING ARCH.md:61,63 L01 learn=none: reading-only check
+2026-11-25T06:51:40Z s=2dc3da1e FINDING README.md:201 P08 learn=none: reading-only check
+2026-11-25T06:51:40Z s=2dc3da1e FINDING docs/API.md:57-59 A03 A10; CHANGELOG.md:6 R03 learn=none: reading-only check

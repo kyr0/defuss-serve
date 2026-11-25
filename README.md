@@ -198,6 +198,16 @@ The default wire-body ceiling is 1 GiB and the default admission limit is 1024. 
 
 `executionTimeoutMs` on a plugin sends 504 on expiry and aborts cooperatively, but an uncooperative handler still holds its lease and handler budget until it settles. Transport framing validates response headers. It drops hop-by-hop headers (`Connection` and the fields it names, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Upgrade` and `Transfer-Encoding: chunked`), so a `fetch()` proxy response passes through. A transfer coding other than chunked is rejected with 500; the Node pump never writes bytes beyond Content-Length and closes a connection after a committed short frame.
 
+`onRequest` receives one event for each request that defuss-serve answers, refusals included, when the response headers are ready. A host can keep an access log with it:
+
+```ts
+createServer({
+  onRequest: e => console.log(`${new Date().toISOString()} info ${e.method} ${e.path} -> ${e.status}${e.rejected ? ' rejected' : ''}`),
+});
+```
+
+`path` is the parsed path and query, or the raw target when it does not parse. A query can carry a token, so filter it before you log it. `rejected` is true when defuss-serve refused the request before a plugin or static file could answer: a missing, malformed or forbidden Host, an unusable target, a stopped or busy server, a declared body over the limit. A request without a usable Host, such as an HTTP/1.0 request without one, gets 400 on both runtimes. A refusal that the runtime sends before the listener sees the request produces no event: on Node 22.16 and Bun 1.4.5 this covers an HTTP/1.1 request without a Host and the parser's errors.
+
 `onLifecycle` measures response-source production, not confirmed network delivery. Native Bun static fast path requires request, stream and descriptor budgets disabled and no lifecycle observer. Native completion accounting cannot safely be promised with the currently implemented BunFile interface.
 
 See [API reference](docs/API.md) for every option, defaults, compatibility details and lifecycle semantics. See [architecture](ARCH.md) for the invariants and security boundaries.

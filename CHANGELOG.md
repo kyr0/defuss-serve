@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- A request without a usable Host gets 400 on both runtimes. Bun hands `fetch()` the raw target as `request.url` when the Host is missing, empty or malformed, as in an HTTP/1.0 request without one, and dispatch answered that with 500.
+- `onRequest` events carry `path` (the path and query, or the raw target when it does not parse) and `rejected` (defuss-serve refused the request before a plugin or static file could answer). Every answered request is reported, refused ones included: the Node listener's own 400s for a target or Host it cannot build a URL from, an absolute-form target or a method Fetch forbids now reach `onRequest` and `stats.rejected` too. Refusals that the runtime sends before the listener sees a request still produce no event. A query can carry a token, so filter `path` before logging it.
+
 ## 0.4.0
 
 - `make release-verify`, and so `bun publish`, defaults to the published defuss-rpc 4.1.0, defuss-mcp 0.6.2 and defuss-o11y 0.3.0; the package variables still override them, and CI uses the same defaults.
