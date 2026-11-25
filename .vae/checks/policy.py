@@ -14,6 +14,8 @@ make = (root / "Makefile").read_text()
 for verb in ("setup", "build", "lint", "test", "coverage", "e2e", "verify", "start", "clean"):
     assert f"{verb}:" in make, f"Missing {verb}"
 assert "bun run test:bun" in make and "REQUIRE_BUN=1" in make
+# Bun 1.4.3 on PATH failed the Bun WebSocket test the pinned 1.4.5 passes: every build checks the active Bun first.
+assert "mise bin-paths" in make and "build: toolchain" in make, "Makefile must put the mise pins on PATH and check Bun before build"
 assert "release-verify: lock-check" in make and "git ls-files --error-unmatch bun.lock" in make
 assert all(not v.startswith(("^", "~", ">", "*")) for v in pkg["devDependencies"].values()), "Pin direct development versions"
 assert "run: make verify" in (root / ".github/workflows/verify.yml").read_text()

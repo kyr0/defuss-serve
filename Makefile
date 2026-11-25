@@ -7,8 +7,13 @@ N ?= 50
 LOG = var/log/$(NAME)
 PID = tmp/$(NAME).pid
 ALIVE = [ -f $(PID) ] && kill -0 "$$(cat $(PID))" 2>/dev/null
+# The tools pinned in mise.toml come first on PATH for every recipe when mise is installed; CI pins them with setup actions.
+MISE_PATH := $(shell mise bin-paths 2>/dev/null | paste -sd: -)
+ifneq ($(MISE_PATH),)
+export PATH := $(MISE_PATH):$(PATH)
+endif
 .DEFAULT_GOAL := help
-.PHONY: help setup build lint policy test coverage e2e verify bench start stop restart status log metrics clean vae-init vae-gate release-verify browsers lock-check bench-frameworks
+.PHONY: help setup toolchain build lint policy test coverage e2e verify bench start stop restart status log metrics clean vae-init vae-gate release-verify browsers lock-check bench-frameworks
 
 help: ## list available commands
 	@awk -F':.*## ' '/^[a-zA-Z0-9_ -]+:.*## /{printf "  %-12s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
@@ -16,7 +21,11 @@ help: ## list available commands
 setup: ## install dependencies with Bun; commit the generated lockfile before release
 	@if [ -f bun.lock ]; then bun install --frozen-lockfile; else bun install; fi
 
-build: ## build ESM, CommonJS and declarations using pkgroll
+toolchain: ## fail fast unless the active Bun is the packageManager pin
+	@want=$$(sed -n 's/.*"packageManager": "bun@\([^"]*\)".*/\1/p' package.json); have=$$(bun --version); \
+	[ "$$have" = "$$want" ] || { echo "bun $$have is active but package.json pins bun@$$want: run mise install, or put bun $$want on PATH" >&2; exit 1; }
+
+build: toolchain ## build ESM, CommonJS and declarations using pkgroll
 	bun run build
 
 policy: ## enforce deterministic repository invariants

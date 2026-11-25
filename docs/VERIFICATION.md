@@ -4,7 +4,7 @@ The source distribution includes a reproducible VAE project policy (`.vae/VERIFY
 
 ## Run on a development machine
 
-Install the toolchain from `mise.toml` and OpenSSL for the certificate-validated HTTPS test. Then run `make setup` and `make browsers`, review and commit the generated `bun.lock`, and run `make verify`. Use `mise exec -- make verify` when the shell's own `bun` or `node` differ from the pins. The Makefile deliberately requires Bun for the standard verification gate.
+Install the toolchain from `mise.toml` and OpenSSL for the certificate-validated HTTPS test. Then run `make setup` and `make browsers`, review and commit the generated `bun.lock`, and run `make verify`. When mise is installed, the Makefile puts the pinned tools first on PATH for every recipe. Every build stops with an error unless the active Bun matches the `packageManager` pin. VERIFIED: Bun 1.4.3 on PATH fails the Bun WebSocket subprotocol test, which the pinned 1.4.5 passes. The Makefile deliberately requires Bun for the standard verification gate.
 
 For the upstream VAE program, run `make vae-init` and `make vae-gate` with `VAE_HOME=/path/to/defuss-vae` (a checkout) or `VAE=/path/to/plugin/scripts/vae.py` (an installed agent plugin). Complete its actual review and docs stages; do not create synthetic attestations.
 

@@ -58,3 +58,7 @@
 2026-11-25T06:51:40Z s=2dc3da1e FINDING ARCH.md:61,63 L01 learn=none: reading-only check
 2026-11-25T06:51:40Z s=2dc3da1e FINDING README.md:201 P08 learn=none: reading-only check
 2026-11-25T06:51:40Z s=2dc3da1e FINDING docs/API.md:57-59 A03 A10; CHANGELOG.md:6 R03 learn=none: reading-only check
+2026-11-25T17:24:17Z s=d517bc7c FAIL tests.unit
+2026-11-25T17:27:40Z s=d517bc7c DONE fp=c86ef73df2f7 cov=90.0% paths=ARCH.md,CHANGELOG.md,Makefile,README.md(+10)
+2026-11-25T17:27:40Z s=d517bc7c FINDING Makefile:build (recipes used the bun on PATH) learn=verifier: .vae/checks/policy.py (repo.policy rule and make lint) now asserts the Makefile keeps `mise bin-paths` and `build: toolchain`; the toolchain target itself fails
+2026-11-25T17:27:40Z s=d517bc7c FINDING src/server.ts:dispatch rejected flag vs stats.rejected learn=none: Behaviour matches the documented contract; tests/regression.test.ts covers the 200, 404, 400, 403, 413 and encoded-slash cases on both runtimes.
