@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createServer, type ServePlugin } from 'defuss-serve';
+import { createServer, acceptWebSocket, type ServePlugin } from 'defuss-serve';
 import { rpcPlugin, mcpPlugin, o11yPlugin } from 'defuss-serve/plugins';
 const require = createRequire(import.meta.url);
 const cjs = require('defuss-serve') as typeof import('defuss-serve');
@@ -20,7 +20,8 @@ const server = createServer({ publicDir: root, port: 0, plugins: [
   o11yPlugin({ fetch: () => new Response('healthy') }),
   cjsPlugins.endpointPlugin('commonjs-plugin', { fetch: () => new Response('cjs') }, [{ path: '/cjs' }]),
 ] });
-const other = cjs.createServer({ port: 0, plugins: [endpoint('esm-plugin', '/esm')] });
+const socket: ServePlugin = { name: 'socket', routes: [{ path: '/socket', methods: ['GET'] }], fetch: r => acceptWebSocket(r, { message(ws, data) { ws.send(data); } }) };
+const other = cjs.createServer({ port: 0, responseHeaders: { 'Cross-Origin-Opener-Policy': 'same-origin' }, plugins: [endpoint('esm-plugin', '/esm'), socket] });
 try {
   await server.start(); await other.start();
   const request = (path: string, init?: RequestInit) => fetch(new URL(path, server.url!), init);
@@ -31,8 +32,12 @@ try {
   assert.deepEqual(await (await request('/mcp', { method: 'POST', body: '{}' })).json(), { mode: 'fetch' });
   assert.equal(await (await request('/health')).text(), 'healthy');
   assert.equal(await (await request('/cjs')).text(), 'cjs');
-  assert.equal(await (await fetch(new URL('/esm', other.url!))).text(), 'esm-plugin');
+  const esm = await fetch(new URL('/esm', other.url!)); assert.equal(await esm.text(), 'esm-plugin');
+  assert.equal(esm.headers.get('cross-origin-opener-policy'), 'same-origin');
+  const ws = new WebSocket(`ws://127.0.0.1:${other.port}/socket`);
+  const echoed = await new Promise<unknown>((resolve, reject) => { ws.onopen = () => ws.send('ping'); ws.onmessage = e => resolve(e.data); ws.onerror = () => reject(new Error('WebSocket failed')); });
+  assert.equal(echoed, 'ping'); ws.close();
   await server.addPlugin(endpoint('live', '/live')); assert.equal(await (await request('/live')).text(), 'live');
   await server.removePlugin('live'); assert.equal((await request('/live')).status, 404);
-  console.log(`Packed consumer PASS: ${server.runtime}, ESM and CommonJS, HTTP static/range, protocol adapters, live registration, independent listeners`);
+  console.log(`Packed consumer PASS: ${server.runtime}, ESM and CommonJS, HTTP static/range, protocol adapters, live registration, independent listeners, a WebSocket echo, host response fields`);
 } finally { await Promise.all([server.stop(), other.stop()]); await rm(root, { recursive: true, force: true }); }

@@ -37,3 +37,14 @@
 2026-11-24T04:12:00Z s=5940460f DONE fp=c1036188a392 cov=89.3% paths=.github/workflows/release-verify.yml,ARCH.md,CHANGELOG.md,README.md(+7)
 2026-11-24T04:12:00Z s=5940460f FINDING src/runtime/framing.ts:validateResponse learn=test: VERIFIED: regression.test.ts hop-by-hop test fails on the previous build at /sse and passes on Node and Bun for plugin, fetch() proxy and streamed fetch() proxy
 2026-11-24T04:12:00Z s=5940460f FINDING scripts/e2e.ts:DEFUSS_O11Y_FIXTURE learn=test: VERIFIED: make release-verify passed with defuss-rpc@4.0.0 and defuss-mcp@0.6.0 from npm and the bundled fixture on Node and Bun.
+2026-11-24T22:44:28Z s=7987786a FAIL tests.unit,tests.e2e.1
+2026-11-24T22:52:47Z s=7987786a DONE fp=803ee2fc23b0 cov=89.8% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+18)
+2026-11-24T22:52:47Z s=7987786a FINDING src/runtime/node-websocket.ts:closing learn=test: regression test with a half-open raw client
+2026-11-24T22:52:47Z s=7987786a FINDING src/runtime/node-websocket.ts:frame learn=test: case added to the forbidden-frames test
+2026-11-24T22:52:47Z s=7987786a FINDING src/runtime/bun.ts:fetch (Sec-WebSocket-Protocol) learn=none: the gate's pinned Bun is 1.4.5; the 1.4.3 deviation is documented in docs/API.md and ARCH.md
+2026-11-24T23:07:30Z s=7987786a DONE fp=c1a10a4a9cf3 cov=89.8% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+19)
+2026-11-25T00:01:48Z s=5940460f FAIL tests.unit
+2026-11-25T00:05:46Z s=5940460f FAIL tests.unit
+2026-11-25T00:05:47Z s=5940460f FAIL tests.unit,coverage
+2026-11-25T00:09:03Z s=5940460f DONE fp=5c5ebad7c267 cov=89.8% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+19)
+2026-11-25T00:09:03Z s=5940460f FINDING src/runtime/node.ts:upgrade learn=test: tests/websocket.test.ts sends an h2c POST whose body ends 50 ms after the head; it passes on Node 22.16, 24.22, 26.13 and Bun 1.4.5, and my first fix (socket on

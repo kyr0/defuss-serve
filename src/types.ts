@@ -24,6 +24,32 @@ export interface ServePlugin extends TransportLimits {
   close?(): void | Promise<void>;
 }
 
+/** One accepted WebSocket, the same on Bun and Node. VERIFIED: tests/websocket.test.ts runs every member on both runtimes. */
+export interface ServeWebSocket {
+  /** The subprotocol the plugin chose from the client's offer, or ''. */
+  readonly protocol: string;
+  /** The peer's address as the listener saw it. */
+  readonly remoteAddress: string | undefined;
+  /** Bytes queued for the peer and not yet written to the socket. */
+  readonly bufferedAmount: number;
+  /** Sends a text (string) or binary (bytes) message; ignored once the socket is closing. */
+  send(data: string | Uint8Array): void;
+  /** Starts the closing handshake: code 1000 (default) or 3000-4999, a reason of at most 123 UTF-8 bytes; RangeError otherwise. */
+  close(code?: number, reason?: string): void;
+}
+/** A socket's events. A handler that throws closes its socket with 1011. */
+export interface WebSocketHandlers {
+  open?(socket: ServeWebSocket): void;
+  message?(socket: ServeWebSocket, data: string | Uint8Array): void;
+  /** The close code and reason the closing frame carried (1005 without a code, 1006 without a closing frame). */
+  close?(socket: ServeWebSocket, code: number, reason: string): void;
+}
+/** What acceptWebSocket takes: the handlers, a subprotocol the client offered, and extra fields of the 101 response. */
+export interface WebSocketAccept extends WebSocketHandlers {
+  readonly protocol?: string;
+  readonly headers?: Readonly<Record<string, string>>;
+}
+
 export interface FetchEndpoint {
   fetch(request: Request): Response | Promise<Response>;
   start?(): void | Promise<void>;
@@ -120,6 +146,10 @@ export interface ServeOptions {
   /** Bun-only opt-in: bypass body tracking for static files. Requires disabled admission and file limits and no lifecycle observer. */
   readonly nativeStaticFastPath?: boolean;
   readonly cacheControl?: string;
+  /** Fields the host sets on every response it sends, replacing a response's field of the same name. */
+  readonly responseHeaders?: Readonly<Record<string, string>>;
+  /** The largest WebSocket message a peer may send, in bytes; 1 MiB by default. */
+  readonly maxWebSocketMessageBytes?: number;
   readonly allowDotfiles?: boolean;
   readonly cors?: CorsOptions;
   readonly tls?: TlsOptions;

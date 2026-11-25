@@ -1,6 +1,6 @@
 /** Runs against the installed package, not source files. Local system Chromium via CDP, CI via Playwright. */
 import assert from 'node:assert/strict';
-import { createServer } from 'defuss-serve';
+import { createServer, acceptWebSocket } from 'defuss-serve';
 import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, writeFile, rm, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -23,6 +23,20 @@ async function probe() {
   const range = await fetch(file, { headers: { Range: 'bytes=128-255' } });
   return { file, duration, position, seeking: video.seeking, status: range.status, contentRange: range.headers.get('content-range'), bytes: (await range.arrayBuffer()).byteLength };
 }
+/** In the page: cross-origin isolation from the host's response fields, and a WebSocket to the echo plugin. */
+async function socketProbe() {
+  const ws = new WebSocket(`ws://${location.host}/echo`, ['other', 'echo']); ws.binaryType = 'arraybuffer';
+  await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = () => reject(Error('WebSocket failed')); });
+  const next = () => new Promise<unknown>(resolve => { ws.onmessage = e => resolve(e.data); });
+  let reply = next(); ws.send('text'); const text = await reply;
+  reply = next(); ws.send(new Uint8Array([1, 2, 3])); const bytes = [...new Uint8Array(await reply as ArrayBuffer)];
+  const closed = new Promise<number>(resolve => { ws.onclose = e => resolve(e.code); }); ws.close(1000, 'done');
+  return { isolated: crossOriginIsolated, shared: typeof SharedArrayBuffer, protocol: ws.protocol, text, bytes, code: await closed };
+}
+interface SocketResult { isolated: boolean; shared: string; protocol: string; text: unknown; bytes: number[]; code: number }
+function verifySocket(result: SocketResult) {
+  assert.deepEqual(result, { isolated: true, shared: 'function', protocol: 'echo', text: 'text', bytes: [1, 2, 3], code: 1000 });
+}
 interface Result { file: string; duration: number; position: number; seeking: boolean; status: number; contentRange: string; bytes: number }
 function verify(result: Result, responses: number[]) {
   assert.ok(result.duration > 10 && result.duration < 13); assert.ok(Math.abs(result.position - 9) < 0.1); assert.equal(result.seeking, false);
@@ -33,7 +47,11 @@ const dir = await mkdtemp(join(tmpdir(),'serve-browser-'));
 const publicDir = join(dir,'public'); await import('node:fs/promises').then(fs=>fs.mkdir(publicDir));
 await writeFile(join(publicDir,'index.html'),'<!doctype html><title>defuss-serve media test</title><body><h1>Media seek</h1></body>');
 for(const name of ['seek.mp4','seek.webm']) await copyFile(fileURLToPath(new URL(`./fixtures/${name}`,import.meta.url)),join(publicDir,name));
-const service=createServer({port:0,publicDir,staticMode:'immutable'});
+const offered=(request:Request)=>(request.headers.get('sec-websocket-protocol')??'').split(',').map(p=>p.trim());
+const service=createServer({port:0,publicDir,staticMode:'immutable',
+  // The two fields of cross-origin isolation (HTML's crossOriginIsolated), on the static page and every other response.
+  responseHeaders:{'Cross-Origin-Opener-Policy':'same-origin','Cross-Origin-Embedder-Policy':'require-corp'},
+  plugins:[{name:'echo',routes:[{path:'/echo',methods:['GET']}],fetch:request=>acceptWebSocket(request,{protocol:offered(request).includes('echo')?'echo':undefined,message(ws,data){ws.send(data);}})}]});
 async function systemChromium(executable: string) {
   const child=spawn(executable,['--headless','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--no-first-run','--no-proxy-server','--remote-debugging-port=0',`--user-data-dir=${join(dir,'chromium')}`,'about:blank'],{stdio:'ignore'});
   let ws: WebSocket | undefined;
@@ -54,6 +72,9 @@ async function systemChromium(executable: string) {
     const r=await call('Runtime.evaluate',{expression:`(${probe.toString()})()`,awaitPromise:true,returnByValue:true});
     if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));
     const result=r.result.value as Result;verify(result,responses);console.log(`System Chromium ${service.runtime} browser seek PASS ${JSON.stringify({result,responses})}`);
+    const sr=await call('Runtime.evaluate',{expression:`(${socketProbe.toString()})()`,awaitPromise:true,returnByValue:true});
+    if(sr.exceptionDetails)throw Error(JSON.stringify(sr.exceptionDetails));
+    verifySocket(sr.result.value as SocketResult);console.log(`System Chromium ${service.runtime} isolation and WebSocket PASS ${JSON.stringify(sr.result.value)}`);
   }finally{ws?.close();child.kill();if(child.exitCode===null)await new Promise<void>(resolve=>child.once('exit',()=>resolve()));}
 }
 try{
@@ -63,7 +84,7 @@ try{
     const name='playwright';const pw=await import(name);
     for(const engine of ['chromium','webkit']){
       const browser=await pw[engine].launch({headless:true});
-      try{const page=await browser.newPage();const responses:number[]=[];page.on('response',(res:{url():string;status():number})=>{if(/\/seek\.(mp4|webm)$/.test(res.url()))responses.push(res.status());});await page.goto(service.url!.href);const result=await page.evaluate(probe) as Result;verify(result,responses);console.log(`${engine} ${service.runtime} browser seek PASS ${JSON.stringify({result,responses})}`);}finally{await browser.close();}
+      try{const page=await browser.newPage();const responses:number[]=[];page.on('response',(res:{url():string;status():number})=>{if(/\/seek\.(mp4|webm)$/.test(res.url()))responses.push(res.status());});await page.goto(service.url!.href);const result=await page.evaluate(probe) as Result;verify(result,responses);console.log(`${engine} ${service.runtime} browser seek PASS ${JSON.stringify({result,responses})}`);const socket=await page.evaluate(socketProbe) as SocketResult;verifySocket(socket);console.log(`${engine} ${service.runtime} isolation and WebSocket PASS ${JSON.stringify(socket)}`);}finally{await browser.close();}
     }
   }
 }finally{await service.stop();await rm(dir,{recursive:true,force:true});}

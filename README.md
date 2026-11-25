@@ -133,6 +133,37 @@ await server.stop();
 
 Plugin mutations are serialized and publish a compiled route snapshot without restarting the listener. `start()` is idempotent while running; a stopped instance is terminal. Removal unpublishes a plugin, waits for handler and response-source settlement, and only then closes resources. Expiry aborts work and returns within the grace budget, but an uncooperative handler or cleanup remains quarantined until it really settles. Inspect `server.stats.pendingCleanup` and diagnostics. An endpoint is exclusively owned by one server, including multiple wrappers of the same endpoint and ESM/CommonJS copies. Ownership is claimed during registration and released only after successful cleanup. Matcher-only endpoints are probed against immutable paths at startup and checked against actual static requests at dispatch.
 
+## WebSockets
+
+A plugin accepts a WebSocket by returning `acceptWebSocket(request, handlers)` from `fetch`. The plugin runs its own checks first and returns any other Response to refuse:
+
+```ts
+import { createServer, acceptWebSocket, type ServePlugin } from 'defuss-serve';
+
+const echo: ServePlugin = {
+  name: 'echo',
+  routes: [{ path: '/echo', methods: ['GET'] }],
+  fetch: request => request.headers.get('origin') === 'http://127.0.0.1:8080'
+    ? acceptWebSocket(request, { message(socket, data) { socket.send(data); } })
+    : new Response('Forbidden', { status: 403 }),
+};
+```
+
+`socket` is the same on Bun and Node: `send(string | Uint8Array)`, `close(code?, reason?)`, `protocol`, `remoteAddress` and `bufferedAmount`. Text arrives as a string, binary data as a Uint8Array. `protocol` picks one of the subprotocols the client offered, and `headers` adds fields to the 101 response. The host validates the Host before the plugin runs. A request that is no handshake gets 400, and an unsupported version gets 426. An open socket counts as an active request and stream and holds its plugin lease. `removePlugin` and `stop` close it with 1001 at once. A throwing handler closes its socket with 1011. A message over `maxWebSocketMessageBytes` (1 MiB) closes it with 1009. Sockets have no idle timeout, pings or compression: a protocol that needs keepalive sends its own messages. Bun uses its native WebSockets. Node runs the RFC 6455 framing in this package, so no runtime dependency is needed.
+
+## Host response fields
+
+`responseHeaders` names fields that every dispatched response carries: static files, plugin responses, refusals, errors and WebSocket handshakes. They replace a response's own field of the same name. A page that needs cross-origin isolation, for a SharedArrayBuffer for example, sets both fields once:
+
+```ts
+createServer({
+  publicDir: './dist',
+  responseHeaders: { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' },
+});
+```
+
+Framing, connection, representation, cookie and WebSocket handshake fields are refused when the server is made (`Content-Length`, `Content-Type`, `Content-Encoding`, `Content-Range`, `Set-Cookie`, `Sec-WebSocket-*` and the hop-by-hop fields). Some refusals leave the listener before dispatch: on Node, the HTTP parser's errors and timeouts; on Bun, malformed requests and bodies over the global `maxBodyBytes`. They carry no host fields.
+
 ## Production configuration
 
 ```ts

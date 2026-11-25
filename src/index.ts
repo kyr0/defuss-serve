@@ -1,2 +1,3 @@
 export { createServer } from './server.js';
-export type { ServeOptions, ServePlugin, ServeRoute, FetchEndpoint, ServeServer, ServerState, RequestEvent, Diagnostic, CorsOptions, TlsOptions, LifecycleEvent, ServeStats, TransportLimits } from './types.js';
+export { acceptWebSocket } from './websocket/accept.js';
+export type { ServeOptions, ServePlugin, ServeRoute, FetchEndpoint, ServeServer, ServerState, RequestEvent, Diagnostic, CorsOptions, TlsOptions, LifecycleEvent, ServeStats, TransportLimits, ServeWebSocket, WebSocketHandlers, WebSocketAccept } from './types.js';

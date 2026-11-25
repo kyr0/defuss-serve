@@ -7,6 +7,9 @@ export interface Entry {
   name: string;
   routes?: readonly ServeRoute[];
   active: Set<AbortController>;
+  /** Leases of open WebSockets: a socket has no natural end, so draining closes it at once instead of at the deadline.
+   * VERIFIED: (WebSocket removal test) removePlugin closes an open socket in under 2 s with a 5 s deadline. */
+  persistent: Set<AbortController>;
   waiters: Set<() => void>;
   state: 'registered' | 'starting' | 'active' | 'draining' | 'closed';
   initializing?: Promise<void>;
@@ -21,7 +24,7 @@ export function entry(plugin: ServePlugin): Entry {
     if (r.methods && (!r.methods.length || r.methods.some(m => !/^[A-Z]+$/.test(m)))) throw new TypeError('Invalid route methods');
     return { path: r.path, prefix: !!r.prefix, methods: r.methods ? [...new Set(r.methods)] : undefined };
   }) : undefined;
-  return { plugin, name: plugin.name, routes, active: new Set(), waiters: new Set(), state: 'registered' };
+  return { plugin, name: plugin.name, routes, active: new Set(), persistent: new Set(), waiters: new Set(), state: 'registered' };
 }
 export function validate(entries: readonly Entry[]): void {
   for (let i = 0; i < entries.length; i++) for (let j = i + 1; j < entries.length; j++) {
@@ -99,7 +102,7 @@ export function waitIdle(e: Entry): Promise<void> {
   return new Promise<void>(resolve => e.waiters.add(resolve));
 }
 export async function waitUntil(promise: Promise<unknown>, deadline: number): Promise<boolean> { return within(promise, remaining(deadline)); }
-export interface Lease { signal: AbortSignal; abort(reason: unknown): void; release(): void }
+export interface Lease { signal: AbortSignal; abort(reason: unknown): void; release(): void; persist(): void }
 /** Abort requests without pretending that an uncooperative handler or cancel hook has completed. */
 export function acquire(e: Entry, client: AbortSignal, scope?: AbortController): Lease {
   // VERIFIED: (disconnect test) a supplied scope already aborts on disconnect; otherwise forward the client signal without AbortSignal.any.
@@ -109,7 +112,12 @@ export function acquire(e: Entry, client: AbortSignal, scope?: AbortController):
   e.active.add(controller);
   return { signal: controller.signal, abort: reason => controller.abort(reason), release() {
     if (forward) client.removeEventListener('abort', forward);
+    e.persistent.delete(controller);
     if (!e.active.delete(controller)) return;
     if (!e.active.size) { for (const waiter of e.waiters) waiter(); e.waiters.clear(); }
+  }, persist() {
+    // A WebSocket outlives its HTTP request: the socket's own end, not the request's signal, ends the lease.
+    if (forward) client.removeEventListener('abort', forward);
+    e.persistent.add(controller);
   } };
 }

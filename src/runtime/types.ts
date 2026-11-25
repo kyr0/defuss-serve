@@ -1,4 +1,5 @@
 import type { StaticFilePlan } from '../static/plan.js';
+import type { Upgrade } from '../websocket/session.js';
 import type { ServeOptions } from '../types.js';
 export interface Listener {
   readonly url: URL;
@@ -13,6 +14,9 @@ export interface DispatchResult {
   length?: number;
   finish: Completion;
   untracked?: boolean;
+  /** A plugin accepted a WebSocket: the adapter sends 101 with `response`'s fields and runs the socket, calling `finish`
+   * when it ends. VERIFIED: tests/websocket.test.ts on the Node and the Bun adapter. */
+  upgrade?: Upgrade;
 }
 /** Transport facts for one request. `client` aborts only on disconnect. An adapter that supplies `scope`
  * has built `request.signal` from it and aborts it on disconnect too, so a plugin lease can reuse that

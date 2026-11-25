@@ -22,9 +22,10 @@ try {
   run(npm, ['install', '--offline', '--ignore-scripts', '--no-audit', '--no-fund', tarball], consumer);
   copyFileSync(join(root, 'tests/consumer.ts'), join(consumer, 'consumer.ts'));
   // Check declarations from an actual external package boundary in both module modes.
-  const typed = `import { createServer, type ServePlugin } from 'defuss-serve';\nimport { endpointPlugin } from 'defuss-serve/plugins';\nconst plugin: ServePlugin = endpointPlugin('test', { fetch: () => new Response('ok') }, [{ path: '/test' }]);\nconst server = createServer({ plugins: [plugin] });\nvoid server.start();\n`;
-  writeFileSync(join(consumer, 'types.mts'), typed);
-  writeFileSync(join(consumer, 'types.cts'), typed.replace("import { createServer, type ServePlugin } from 'defuss-serve';", "import serve = require('defuss-serve');\ntype ServePlugin = serve.ServePlugin;\nconst { createServer } = serve;").replace("import { endpointPlugin } from 'defuss-serve/plugins';", "import plugins = require('defuss-serve/plugins');\nconst { endpointPlugin } = plugins;"));
+  const typed = `import { createServer, type ServePlugin } from 'defuss-serve';\nimport { endpointPlugin } from 'defuss-serve/plugins';\nconst plugin: ServePlugin = endpointPlugin('test', { fetch: () => new Response('ok') }, [{ path: '/test' }]);\nconst server = createServer({ plugins: [plugin], responseHeaders: { 'X-Test': '1' } });\nvoid server.start();\n`;
+  const socketTyped = `const socketPlugin: ServePlugin = { name: 'ws', routes: [{ path: '/ws' }], fetch: r => acceptWebSocket(r, { protocol: 'chat', message(ws, data: string | Uint8Array) { ws.send(data); ws.close(4000, 'done'); } }) };\nvoid socketPlugin;\n`;
+  writeFileSync(join(consumer, 'types.mts'), typed.replace('{ createServer,', '{ createServer, acceptWebSocket,') + socketTyped);
+  writeFileSync(join(consumer, 'types.cts'), typed.replace("import { createServer, type ServePlugin } from 'defuss-serve';", "import serve = require('defuss-serve');\ntype ServePlugin = serve.ServePlugin;\nconst { createServer, acceptWebSocket } = serve;").replace("import { endpointPlugin } from 'defuss-serve/plugins';", "import plugins = require('defuss-serve/plugins');\nconst { endpointPlugin } = plugins;") + socketTyped);
   run('tsc', ['--noEmit', '--strict', '--skipLibCheck', '--target', 'ES2022', '--lib', 'ES2023,DOM,DOM.Iterable', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', 'types.mts', 'types.cts'], consumer);
   let log = 'Consumer declaration checks: ESM + CommonJS PASS\n';
   log += run(process.execPath, ['--experimental-strip-types', 'consumer.ts'], consumer);

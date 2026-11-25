@@ -10,6 +10,10 @@ import { acquire, entry, remaining, Routes, validate, waitIdle, waitUntil } from
 import type { Entry, Lease } from './registry.js';
 import { applyCors, boundBody, preflight, sanitizeForwarding, validateCors } from './http.js';
 import type { BoundedBody } from './http.js';
+import { fieldList, withFields } from './policy.js';
+import type { FieldList } from './policy.js';
+import { acceptanceOf } from './websocket/accept.js';
+import type { Acceptance } from './websocket/accept.js';
 import type { Diagnostic, LifecycleEvent, ServeOptions, ServePlugin, ServeServer, ServeStats, ServerState } from './types.js';
 
 const GiB = 1024 ** 3;
@@ -22,6 +26,7 @@ function checkOptions(options: ServeOptions): void {
     ['pluginStartTimeoutMs', options.pluginStartTimeoutMs, 1, 2 ** 31 - 1],
     ['maxConcurrentRequests', options.maxConcurrentRequests, 0, Number.MAX_SAFE_INTEGER], ['maxConcurrentStreams', options.maxConcurrentStreams, 0, Number.MAX_SAFE_INTEGER],
     ['maxConnections', options.maxConnections, 0, Number.MAX_SAFE_INTEGER], ['maxConcurrentHandlers', options.maxConcurrentHandlers, 0, Number.MAX_SAFE_INTEGER], ['maxConcurrentUploads', options.maxConcurrentUploads, 0, Number.MAX_SAFE_INTEGER], ['maxOpenStaticFiles', options.maxOpenStaticFiles, 0, Number.MAX_SAFE_INTEGER],
+    ['maxWebSocketMessageBytes', options.maxWebSocketMessageBytes, 1, 2 ** 31 - 1],
     ['staticCacheTtlMs', options.staticCacheTtlMs, 0, 2 ** 31 - 1], ['staticCacheEntries', options.staticCacheEntries, 0, Number.MAX_SAFE_INTEGER], ['maxManifestEntries', options.maxManifestEntries, 1, Number.MAX_SAFE_INTEGER],
   ] as const) if (value !== undefined && (!Number.isSafeInteger(value) || value < min || value > max)) throw new RangeError(`Invalid ${name}`);
   if (options.runtime && !['auto', 'bun', 'node'].includes(options.runtime)) throw new Error('Invalid runtime');
@@ -62,6 +67,7 @@ class Server implements ServeServer {
   private readonly handlerLimit: number;
   private readonly uploadLimit: number;
   private readonly fileLimit: number;
+  private readonly fields: FieldList;
   private activeHandlers = 0;
   private activeUploads = 0;
   private openStaticFiles = 0;
@@ -71,6 +77,7 @@ class Server implements ServeServer {
   readonly runtime: 'node' | 'bun';
   constructor(options: ServeOptions) {
     checkOptions(options);
+    this.fields = fieldList(options.responseHeaders, 'responseHeaders');
     this.options = { ...options, allowedHosts: options.allowedHosts?.slice(), trustedProxies: options.trustedProxies?.slice(), immutableAssetPattern: options.immutableAssetPattern ? new RegExp(options.immutableAssetPattern.source, options.immutableAssetPattern.flags) : undefined, cors: options.cors ? { ...options.cors, origins: [...options.cors.origins], methods: options.cors.methods?.slice(), headers: options.cors.headers?.slice(), exposeHeaders: options.cors.exposeHeaders?.slice() } : undefined, tls: options.tls ? { ...options.tls } : undefined };
     this.runtime = options.runtime === 'node' || (options.runtime !== 'bun' && !bunRuntime()) ? 'node' : 'bun';
     if (this.runtime === 'bun' && options.maxConnections) throw new Error('maxConnections is not supported by the Bun adapter');
@@ -128,6 +135,7 @@ class Server implements ServeServer {
   /** Dispose only after real handler and source cancellation completion. Deadline expiry quarantines the instance. */
   private async closeEntry(e: Entry, deadline: number): Promise<void> {
     e.state = 'draining'; this.pending.set(e.name, e);
+    for (const socket of e.persistent) socket.abort(new Error('Plugin closing'));
     const idle = waitIdle(e);
     if (e.active.size && !(await waitUntil(idle, deadline))) {
       for (const controller of e.active) controller.abort(new Error('Plugin drain deadline'));
@@ -210,6 +218,7 @@ class Server implements ServeServer {
     let stream = false, admitted = false, finished = false, failed = false, upload = false;
     let executionExpired = false;
     let plan: StaticFilePlan | undefined;
+    let upgrade: Acceptance | undefined;
     const emit = (phase: LifecycleEvent['phase'], bytes = 0) => {
       if (this.options.onLifecycle) try { this.options.onLifecycle({ phase, method: incoming.method, handler, route, status, bytes, durationMs: performance.now() - started, activeRequests: this.activeRequests, activeStreams: this.activeStreams }); } catch { /* isolated observer */ }
     };
@@ -316,6 +325,8 @@ class Server implements ServeServer {
                   finally { this.activeHandlers--; }
                 }
                 if (!(response instanceof Response)) throw new TypeError('Plugin must return a Response');
+                upgrade = acceptanceOf(response);
+                if (upgrade) lease?.persist();
               }
               }
             } else {
@@ -338,7 +349,19 @@ class Server implements ServeServer {
     try {
       if (failure) { await cancel(response).catch(noop); response = reject(failure, failure === 408 ? 'Request Timeout' : 'Payload Too Large'); }
       const signal = executionExpired ? client : lease?.signal ?? client;
-      if (signal.aborted) { await cancel(response, signal.reason).catch(noop); finish('cancel', 0); return {response: new Response(null, { status: 503 }), signal: client, finish}; }
+      if (signal.aborted) { await cancel(response, signal.reason).catch(noop); finish('cancel', 0); return {response: withFields(new Response(null, { status: 503 }), this.fields), signal: client, finish}; }
+      if (upgrade) {
+        // An open WebSocket holds a request and a stream slot until it ends, as an event stream does.
+        // VERIFIED: (stream budget test) with one slot, a second handshake gets 503 while a socket is open.
+        if (this.streamLimit && this.activeStreams >= this.streamLimit) { this.rejected++; upgrade = undefined; response = new Response(null, { status: 503 }); }
+        else {
+          stream = true; this.activeStreams++; status = 101;
+          try { this.options.onRequest?.({ method: incoming.method, handler, status, durationMs: performance.now() - started }); } catch { /* isolated observer */ }
+          emit('headers');
+          const plugin = handler;
+          return { response: withFields(response, this.fields), signal, finish, upgrade: { ...upgrade, report: () => this.diagnostic({ code: 'request-error', plugin }) } };
+        }
+      }
       if (incoming.method === 'HEAD' && (response.body || plan)) {
         await cancel(response).catch(noop);
         response = new Response(null, { status: response.status, headers: response.headers });
@@ -363,11 +386,11 @@ class Server implements ServeServer {
       try { this.options.onRequest?.({ method: incoming.method, handler, status, durationMs: performance.now() - started }); } catch { /* isolated observer */ }
       emit('headers');
       if (untracked) finish('complete', 0);
-      return {response, file: plan, signal, length, finish, untracked};
+      return {response: withFields(response, this.fields), file: plan, signal, length, finish, untracked};
     } catch (error) {
       await cancel(response, error).catch(noop);
       finish('error', 0); this.diagnostic({ code: 'request-error' });
-      return {response: new Response('Internal Server Error', { status: 500 }), signal: client, finish};
+      return {response: withFields(new Response('Internal Server Error', { status: 500 }), this.fields), signal: client, finish};
     }
   };
 }
