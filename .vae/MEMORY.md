@@ -13,3 +13,4 @@
 - VERIFIED[Node 22 perf] API CPU is undici Request/signal churn, not routing: avoid per-call Request clones and AbortSignal.any BC alternating A/B 6x30k req, 48->37us/req, 2026-11-24
 - VERIFIED[Bun static perf] Tracked file bodies cost ~4x native CPU from JS-stream consumption; fewer layers or Bun.file(fd) streams do not help BC 2026-11-24 probe
 - VERIFIED[toolchain] `mise exec -C <dir>` also runs the command in <dir>: an npm install meant for a scratch consumer wrote package.json and package-lock.json here BC 2026-11-24 incident; cd into the scratch dir instead.
+- VERIFIED[fetch() proxying] Node 22.16/26.13 and Bun 1.4.5 fetch decode gzip|deflate|br but keep Content-Encoding and the encoded Content-Length; zstd only Node 26|Bun; Bun sends a given Host BC 2026-11-26 probe; src/plugins/proxy.ts.

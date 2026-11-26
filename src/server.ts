@@ -8,7 +8,7 @@ import type { Listener, DispatchResult, Incoming } from './runtime/types.js';
 import { StaticStore } from './static/serve.js';
 import { acquire, entry, remaining, Routes, validate, waitIdle, waitUntil } from './registry.js';
 import type { Entry, Lease } from './registry.js';
-import { applyCors, boundBody, preflight, sanitizeForwarding, validateCors } from './http.js';
+import { applyCors, boundBody, markPeer, preflight, sanitizeForwarding, validateCors } from './http.js';
 import type { BoundedBody } from './http.js';
 import { fieldList, withFields } from './policy.js';
 import type { FieldList } from './policy.js';
@@ -299,6 +299,7 @@ class Server implements ServeServer {
               if (result instanceof Response) { refused = true; response = result; }
               else {
                 bounded = result;
+                markPeer(result.request, peer);
                 if (lease.signal.aborted) throw lease.signal.reason;
                 this.activeHandlers++;
                 // The timeout may finish the HTTP request, but never releases a still-running

@@ -62,3 +62,11 @@
 2026-11-25T17:27:40Z s=d517bc7c DONE fp=c86ef73df2f7 cov=90.0% paths=ARCH.md,CHANGELOG.md,Makefile,README.md(+10)
 2026-11-25T17:27:40Z s=d517bc7c FINDING Makefile:build (recipes used the bun on PATH) learn=verifier: .vae/checks/policy.py (repo.policy rule and make lint) now asserts the Makefile keeps `mise bin-paths` and `build: toolchain`; the toolchain target itself fails
 2026-11-25T17:27:40Z s=d517bc7c FINDING src/server.ts:dispatch rejected flag vs stats.rejected learn=none: Behaviour matches the documented contract; tests/regression.test.ts covers the 200, 404, 400, 403, 413 and encoded-slash cases on both runtimes.
+2026-11-26T09:49:10Z s=2a2a1289 DONE fp=88899f03af96 cov=90.3% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+9)
+2026-11-26T09:49:10Z s=2a2a1289 FINDING src/plugins/proxy.ts:hopByHop|decoded learn=test: tests/proxy.test.ts gzip, zstd and Host assertions; MEMORY line fetch() proxying
+2026-11-26T09:49:10Z s=2a2a1289 FINDING tests/consumer.ts:echo learn=test: packed consumer asserts the forwarded chain with trustedProxies; README states the trustedProxies requirement
+2026-11-26T09:49:10Z s=2a2a1289 FINDING ARCH.md:Reverse proxy B (evidence) learn=test: tests/proxy.test.ts 'cancels the upstream request when the client disconnects'
+2026-11-26T09:49:10Z s=2a2a1289 FINDING docs/API.md:proxyPlugin P (precision) learn=none: a doc omission, not mechanically checkable
+2026-11-26T09:49:10Z s=2a2a1289 FINDING src/http.ts:markPeer learn=none: comment wording
+2026-11-26T11:09:18Z s=2a2a1289 DONE fp=8970f60dcba6 cov=90.3% paths=ARCH.md,CHANGELOG.md,README.md,docs/API.md(+11)
+2026-11-26T11:09:18Z s=2a2a1289 FINDING package.json:version learn=none: release bookkeeping

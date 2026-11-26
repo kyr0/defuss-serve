@@ -1,3 +1,4 @@
+import { peerMark } from './ownership.js';
 import type { CorsOptions } from './types.js';
 
 export function vary(headers: Headers, name: string): void {
@@ -47,6 +48,18 @@ export function applyCors(request: Request, response: Response, cors?: CorsOptio
   catch { const headers = new Headers(response.headers); decorate(headers); return new Response(response.body, { status: response.status, statusText: response.statusText, headers }); }
 }
 
+/** Record the direct socket peer on the Request handed to a plugin. Why not a header: a client could send one.
+ * VERIFIED: tests/proxy.test.ts: a forged X-Forwarded-For leaves it 127.0.0.1, and the packed consumer reads a mark
+ * that the CommonJS copy set from the ESM copy. */
+export function markPeer(request: Request, peer: string | undefined): void {
+  if (peer) Object.defineProperty(request, peerMark, { value: peer });
+}
+/** The direct socket peer of a Request that defuss-serve handed to a plugin, else undefined. A Request the plugin
+ * builds itself has none. This is the peer, not a forwarded client: read forwarding fields only from trusted proxies. */
+export function remoteAddress(request: Request): string | undefined {
+  const peer = (request as Request & { [peerMark]?: unknown })[peerMark];
+  return typeof peer === 'string' ? peer : undefined;
+}
 /** Do not trust forwarding metadata from an arbitrary client. No automatic origin rewriting. */
 export function sanitizeForwarding(request: Request, peer: string | undefined, trusted: readonly string[]): Request {
   if (peer && trusted.includes(peer)) return request;

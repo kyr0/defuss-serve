@@ -74,6 +74,28 @@ const health = o11yPlugin(
 
 The generic adapter does not define defuss-o11y health semantics. Its default routes are `/health`, `/healthz` and `/metrics`; defuss-o11y 0.3.0 also serves `/readyz` and `/livez`, so pass all five routes, as `tests/o11y-fixture.ts` does. The optional `onLifecycle`, `onRequest` and `onDiagnostic` callbacks expose host-level observations to your logging or metrics system.
 
+## Reverse proxy
+
+`proxyPlugin(path, target, options?)` forwards a path's subtree to the same subtree of an upstream URL. An app can then give its browser one origin for its own API and for a service behind it, such as an auth service:
+
+```ts
+import { createServer } from 'defuss-serve';
+import { proxyPlugin } from 'defuss-serve/plugins';
+
+const server = createServer({
+  publicDir: './dist',
+  plugins: [proxyPlugin('/auth', 'http://127.0.0.1:43127/apps/linear-clone/auth', {
+    headers: { 'X-Backplane-Key': process.env.BACKPLANE_API_KEY! },
+  })],
+});
+```
+
+`GET /auth/me?x=1` reaches `http://127.0.0.1:43127/apps/linear-clone/auth/me?x=1`. The body streams in both directions, with no buffering, under the host's body limits. The proxy forwards end-to-end fields (Authorization, Cookie, Origin) and drops `Host`, `Content-Length`, the hop-by-hop fields and every field that `Connection` names. `headers` replaces the client's field of the same name, so a client cannot forge a service credential that the proxy sets. Unless `forwarded: false`, it sets `X-Forwarded-For` to the socket peer, appended to a chain that a trusted proxy sent, and sets `X-Forwarded-Host` and `X-Forwarded-Proto`. An upstream on defuss-serve keeps them only if the proxy's address is in its `trustedProxies`. Several `Set-Cookie` fields stay separate. A redirect into the target's subtree becomes a path under `path` on this origin, and a redirect elsewhere passes unchanged.
+
+VERIFIED: `tests/proxy.test.ts` runs every behavior above on Node and Bun against a real upstream. The proxy asks for `Accept-Encoding: identity`, because Node and Bun `fetch()` decode a compressed answer but keep its `Content-Encoding` and encoded `Content-Length`. An answer in gzip, deflate or br still arrives decoded, without those fields. Any other coding gets 502, because whether `fetch()` decodes zstd depends on the runtime. An unreachable upstream also gets 502; set `executionTimeoutMs` for a 504 when the upstream sends no headers in time. WebSocket upgrades are not proxied.
+
+`remoteAddress(request)` from `defuss-serve` returns the socket peer of the Request a plugin received. A Request that the plugin builds itself has none. It is the direct peer, so behind a reverse proxy it is the proxy's address.
+
 ## Static-first dispatch
 
 | Request | Result |

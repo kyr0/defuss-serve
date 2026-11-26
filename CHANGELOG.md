@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- Add `proxyPlugin(path, target, options?)` in `defuss-serve/plugins`. It forwards a path's subtree to an upstream through `fetch()`, streams bodies, sets configured service fields that replace the client's, sets `X-Forwarded-For`, `-Host` and `-Proto`, keeps several `Set-Cookie` fields, rewrites redirects into the target's subtree, and answers 502 for an unreachable upstream or a content coding that `fetch()` may not decode.
+- Add `remoteAddress(request)`: the socket peer of the Request a plugin received, readable across the ESM and CommonJS copies.
+
 ## 0.4.1
 
 - A request without a usable Host gets 400 on both runtimes. Bun hands `fetch()` the raw target as `request.url` when the Host is missing, empty or malformed, as in an HTTP/1.0 request without one, and dispatch answered that with 500.
